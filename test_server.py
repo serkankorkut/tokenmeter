@@ -24,7 +24,7 @@ CODEX_NEW = [
 ]
 CODEX_OLD = [
     {"type": "session_meta", "timestamp": "2026-08-01T11:00:00Z", "payload": {"id": "c2", "cwd": "/y"}},
-    {"type": "event_msg", "timestamp": "2026-08-01T11:00:02Z", "payload": {"type": "token_count", "info": {"last_token_usage": {"input_tokens": 100, "cached_input_tokens": 40, "output_tokens": 10}}}},
+    {"type": "event_msg", "timestamp": "2026-08-01T11:00:02Z", "payload": {"type": "token_count", "info": {"last_token_usage": {"input_tokens": 100, "cached_input_tokens": 40, "output_tokens": 10}, "model_context_window": 258400}, "rate_limits": {"plan_type": "plus", "primary": {"used_percent": 42, "window_minutes": 300, "resets_at": 1}, "secondary": None}}},
     {"type": "event_msg", "timestamp": "2026-08-01T11:00:03Z", "payload": {"type": "token_count", "info": None}},
 ]
 
@@ -36,23 +36,37 @@ def write(lines):
     return f.name
 
 
-recs, prompts = server.parse_claude(write(CLAUDE_LINES))
+recs, prompts, _ = server.parse_claude(write(CLAUDE_LINES))
 assert len(prompts) == 1 and prompts[0]["text"] == "hi" and prompts[0]["id"] == "p1", prompts
 assert len(recs) == 1, recs
 r = recs[0]
 assert (r["in"], r["cr"], r["cw5"], r["cw1h"], r["out"]) == (10, 100, 20, 30, 40), r
 assert abs(server.cost_of(r) - (10 * 5 + 100 * 0.5 + 20 * 6.25 + 30 * 10 + 40 * 25) / 1e6) < 1e-9
 
-recs, prompts = server.parse_codex(write(CODEX_NEW))
+recs, prompts, meta = server.parse_codex(write(CODEX_NEW))
 assert len(recs) == 1 and len(prompts) == 1, (recs, prompts)
 assert prompts[0]["text"] == "fix the bug" and prompts[0]["id"] == "t1", prompts
 assert (recs[0]["in"], recs[0]["cr"], recs[0]["out"], recs[0]["reason"]) == (100, 200, 20, 7), recs
 assert recs[0]["model"] == "gpt-6-astra" and recs[0]["project"] == "/x"
-assert server.cost_of(recs[0]) is None
+assert abs(server.cost_of(recs[0]) - (100 * 10 + 200 * 1 + 20 * 50) / 1e6) < 1e-9
 
-recs, _ = server.parse_codex(write(CODEX_OLD))
+recs, _, meta = server.parse_codex(write(CODEX_OLD))
+assert meta["limits"]["windows"][0]["used_percent"] == 42 and meta["ctx"] == 258400, meta
 assert len(recs) == 1 and (recs[0]["in"], recs[0]["cr"]) == (60, 40), recs
 
+import sqlite3
+db = tempfile.NamedTemporaryFile(suffix=".db", delete=False).name
+con = sqlite3.connect(db)
+con.executescript("""create table sessions(id text, cwd text); create table turns(session_id text, turn_index int, user_message text, timestamp text);
+create table assistant_usage_events(session_id text, model text, input_tokens int, output_tokens int, cache_read_tokens int, cache_write_tokens int, reasoning_tokens int, agent_id text, created_at text);
+insert into sessions values('s9','/cp'); insert into turns values('s9',0,'make it fast','2026-08-21 12:00:00');
+insert into assistant_usage_events values('s9','gpt-5.5',1000,50,900,0,10,null,'2026-08-21T12:00:05.000Z');""")
+con.commit(); con.close()
+recs, prompts, _ = server.parse_copilot(db)
+assert (recs[0]["in"], recs[0]["cr"], recs[0]["out"], recs[0]["project"], recs[0]["tool"]) == (100, 900, 50, "/cp", "copilot"), recs
+assert prompts[0]["text"] == "make it fast" and prompts[0]["ts"] == "2026-08-21T12:00:00Z", prompts
+assert server.price_for("gpt-5.5-cyber")["output"] == 75 and server.price_for("gpt-5.5")["output"] == 30
+assert server.longest_prefix(server.CONTEXT_WINDOWS, "claude-haiku-4-5") == 200000
 assert server.price_for("claude-haiku-4-5-20251001")["output"] == 5
 assert server.price_for("claude-fable-5-1")["cache_read"] == 0.25
 assert server.price_for("claude-fable-5")["cache_read"] == 1

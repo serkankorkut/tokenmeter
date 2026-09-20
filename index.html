@@ -9,29 +9,29 @@
   color-scheme: light;
   --bg: #f4f4f2; --surface: #fcfcfb; --line: #e3e2dd; --line-soft: #efeeea;
   --text: #0b0b0b; --text-2: #52514e; --text-3: #8a8983;
-  --claude: #2a78d6; --codex: #eb6834;
+  --claude: #2a78d6; --codex: #eb6834; --copilot: #1baf7a;
   --mix-1: #d9d4f5; --mix-2: #a89ee6; --mix-3: #7466cc; --mix-4: #4a3aa7;
-  --good: #008300; --warn: #c98500;
+  --good: #008300; --warn: #c98500; --bad: #e34948;
   --shadow: 0 1px 2px rgba(0,0,0,.04), 0 4px 16px rgba(0,0,0,.04);
 }
 :root[data-theme="dark"] {
   color-scheme: dark;
   --bg: #111110; --surface: #1a1a19; --line: #2c2c2a; --line-soft: #232321;
   --text: #ffffff; --text-2: #c3c2b7; --text-3: #85847c;
-  --claude: #3987e5; --codex: #d95926;
+  --claude: #3987e5; --codex: #d95926; --copilot: #199e70;
   --mix-1: #4a4470; --mix-2: #6b62a8; --mix-3: #9085e9; --mix-4: #c3bcf5;
-  --good: #3fb950; --warn: #d9a441;
+  --good: #3fb950; --warn: #d9a441; --bad: #e66767;
   --shadow: none;
 }
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif; -webkit-font-smoothing: antialiased; }
-.wrap { max-width: 1280px; margin: 0 auto; padding: 20px 16px 48px; }
+.wrap { max-width: 1320px; margin: 0 auto; padding: 20px 16px 48px; }
 header { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 18px; }
 .brand { display: flex; align-items: center; gap: 10px; margin-right: auto; }
 .brand h1 { font-size: 18px; margin: 0; letter-spacing: -.01em; }
 .brand svg { width: 26px; height: 26px; }
 .live { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-2); }
-.live i { width: 8px; height: 8px; border-radius: 50%; background: var(--good); box-shadow: 0 0 0 0 var(--good); animation: pulse 2s infinite; }
+.live i { width: 8px; height: 8px; border-radius: 50%; background: var(--good); animation: pulse 2s infinite; }
 .live.stale i { background: var(--warn); animation: none; }
 @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(0,131,0,.5); } 70% { box-shadow: 0 0 0 7px rgba(0,131,0,0); } 100% { box-shadow: 0 0 0 0 rgba(0,131,0,0); } }
 .controls { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
@@ -42,32 +42,30 @@ header { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-
 a.btn { text-decoration: none; display: inline-block; }
 select, .btn { border: 1px solid var(--line); background: var(--surface); color: var(--text); border-radius: 8px; padding: 6px 10px; font: inherit; font-size: 13px; max-width: 220px; cursor: pointer; }
 .btn:hover, select:hover { border-color: var(--text-3); }
-.grid { display: grid; gap: 14px; }
-.kpis { grid-template-columns: repeat(6, 1fr); margin-bottom: 14px; }
+.grid { display: grid; gap: 14px; margin-bottom: 14px; }
+.kpis { grid-template-columns: repeat(6, 1fr); }
 @media (max-width: 1100px) { .kpis { grid-template-columns: repeat(3, 1fr); } }
 @media (max-width: 560px) { .kpis { grid-template-columns: repeat(2, 1fr); } }
+.two { grid-template-columns: 1fr 1fr; }
+@media (max-width: 860px) { .two { grid-template-columns: 1fr; } }
 .card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; box-shadow: var(--shadow); min-width: 0; }
 .kpi .label { font-size: 12px; color: var(--text-2); margin-bottom: 6px; }
 .kpi .value { font-size: 26px; font-weight: 600; letter-spacing: -.02em; font-variant-numeric: tabular-nums; line-height: 1.1; }
 .kpi .sub { font-size: 12px; color: var(--text-3); margin-top: 6px; font-variant-numeric: tabular-nums; }
 .kpi .sub b { color: var(--text-2); font-weight: 500; }
-.two { grid-template-columns: 1fr 1fr; margin-bottom: 14px; }
-@media (max-width: 860px) { .two { grid-template-columns: 1fr; } }
-.card h2 { font-size: 14px; margin: 0 0 12px; font-weight: 600; display: flex; align-items: center; gap: 10px; }
+.card h2 { font-size: 14px; margin: 0 0 12px; font-weight: 600; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .card h2 .legend { margin-left: auto; display: flex; gap: 14px; font-weight: 400; font-size: 12px; color: var(--text-2); }
+.card h2 .hint { margin-left: auto; font-weight: 400; color: var(--text-3); font-size: 12px; }
 .legend span { display: inline-flex; align-items: center; gap: 6px; }
 .legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
-.sw-claude { background: var(--claude); } .sw-codex { background: var(--codex); }
 .chart-wrap { position: relative; }
 svg.chart { width: 100%; height: 260px; display: block; overflow: visible; }
 svg.chart text { fill: var(--text-3); font-size: 11px; font-variant-numeric: tabular-nums; }
 svg.chart .grid line { stroke: var(--line-soft); }
 svg.chart .axis line { stroke: var(--line); }
-svg.chart rect.bar { transition: opacity .15s; }
 svg.chart g.col:hover rect.bar { opacity: .85; }
 svg.chart rect.hit { fill: transparent; }
 .tip { position: absolute; pointer-events: none; background: var(--text); color: var(--bg); padding: 8px 10px; border-radius: 8px; font-size: 12px; white-space: nowrap; transform: translate(-50%, calc(-100% - 10px)); opacity: 0; transition: opacity .1s; z-index: 5; font-variant-numeric: tabular-nums; }
-.tip b { font-weight: 600; }
 .tip .row { display: flex; gap: 10px; justify-content: space-between; }
 .tip i { width: 8px; height: 8px; border-radius: 2px; display: inline-block; margin-right: 6px; }
 .mix { display: flex; height: 22px; border-radius: 6px; overflow: hidden; gap: 2px; background: var(--line-soft); margin: 4px 0 14px; }
@@ -78,27 +76,40 @@ svg.chart rect.hit { fill: transparent; }
 .mixlist i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; margin-right: 6px; vertical-align: -1px; }
 table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; font-size: 13px; }
 th, td { text-align: left; padding: 8px 8px; border-bottom: 1px solid var(--line-soft); white-space: nowrap; }
-th { font-weight: 500; color: var(--text-2); font-size: 12px; }
+th { font-weight: 500; color: var(--text-2); font-size: 12px; cursor: pointer; user-select: none; position: sticky; top: 0; background: var(--surface); }
+th:hover, th.on { color: var(--text); }
 td.n, th.n { text-align: right; }
-td.mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
-td .tool { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 7px; vertical-align: 1px; }
+td.mono, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
+.tool { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 7px; vertical-align: 1px; }
 td .bar { display: inline-block; height: 6px; border-radius: 3px; background: var(--text); opacity: .18; vertical-align: middle; margin-left: 8px; }
 tr.new td { animation: flash 1.6s ease-out; }
 @keyframes flash { from { background: color-mix(in srgb, var(--claude) 18%, transparent); } to { background: transparent; } }
 tr.prow { cursor: pointer; } tr.prow:hover td { background: var(--line-soft); }
-td.ptext { white-space: normal; min-width: 180px; max-width: 420px; color: var(--text); }
+td.wrap { white-space: normal; min-width: 180px; max-width: 420px; color: var(--text); }
 tr.pfull td { white-space: normal; background: var(--line-soft); padding: 12px 14px; }
 .full { white-space: pre-wrap; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; line-height: 1.5; max-height: 240px; overflow: auto; }
-tr.pfull code { font-family: ui-monospace, Menlo, monospace; background: var(--surface); padding: 1px 5px; border-radius: 4px; user-select: all; }
+tr.pfull code, .notice code, footer code { font-family: ui-monospace, Menlo, monospace; background: var(--bg); padding: 1px 5px; border-radius: 4px; user-select: all; }
 .trunc { max-width: 260px; overflow: hidden; text-overflow: ellipsis; }
+td.commit { max-width: 180px; } td.repo { max-width: 110px; }
 .scroll { overflow: auto; max-height: 420px; }
 .muted { color: var(--text-3); font-size: 12px; }
 footer { margin-top: 20px; color: var(--text-3); font-size: 12px; display: flex; gap: 16px; flex-wrap: wrap; }
-footer code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
-.empty { padding: 30px; text-align: center; color: var(--text-3); }
+.empty { padding: 30px; text-align: center; color: var(--text-3); white-space: normal; }
 .hide { display: none !important; }
 .notice { background: var(--surface); border: 1px dashed var(--line); border-radius: 10px; padding: 10px 14px; font-size: 12px; color: var(--text-2); margin-bottom: 14px; }
-.notice code { font-family: ui-monospace, Menlo, monospace; }
+.notice.alert { border-color: var(--bad); color: var(--text); }
+.meter { height: 8px; border-radius: 4px; background: var(--line-soft); overflow: hidden; margin: 6px 0 4px; }
+.meter div { height: 100%; border-radius: 4px; background: var(--text); transition: width .3s; }
+.meter.warn div { background: var(--warn); } .meter.bad div { background: var(--bad); }
+.limits { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
+.limits h3 { font-size: 12px; font-weight: 600; margin: 0 0 8px; }
+.limits .row { font-size: 12px; color: var(--text-2); display: flex; justify-content: space-between; gap: 8px; margin-top: 8px; }
+.limits .row b { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
+.sess { display: grid; gap: 10px; }
+.sess .item { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; font-size: 12px; }
+.sess .name { color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sess .meter { grid-column: 1 / -1; margin: 2px 0 0; }
+.kpi .meter { margin-top: 8px; }
 </style>
 </head>
 <body>
@@ -111,7 +122,8 @@ footer code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
   </div>
   <div class="controls">
     <div class="seg" id="range"><button data-v="today">Today</button><button data-v="7">7d</button><button data-v="30" class="on">30d</button><button data-v="all">All</button></div>
-    <div class="seg" id="tool"><button data-v="all" class="on">All</button><button data-v="claude">Claude Code</button><button data-v="codex">Codex</button></div>
+    <div class="seg" id="tool"><button data-v="all" class="on">All</button><button data-v="claude">Claude Code</button><button data-v="codex">Codex</button><button data-v="copilot">Copilot</button></div>
+    <select id="user" class="hide"><option value="">Everyone</option></select>
     <select id="project"><option value="">All projects</option></select>
     <select id="model"><option value="">All models</option></select>
     <button class="btn" id="theme" title="Toggle theme">◐</button>
@@ -119,23 +131,35 @@ footer code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
   </div>
 </header>
 
+<div class="notice hide" id="firstRun">No transcripts found yet. Tokenmeter reads <code id="frClaude"></code>, <code id="frCodex"></code> and <code id="frCopilot"></code>. Send one prompt in Claude Code, Codex or Copilot CLI and it will appear here within a few seconds. If your logs live elsewhere, set <code>CLAUDE_CONFIG_DIR</code>, <code>CODEX_HOME</code> or <code>COPILOT_DB</code> before starting the server.</div>
+<div class="notice alert hide" id="alerts"></div>
 <div class="notice hide" id="unpriced"></div>
 
 <div class="grid kpis">
+  <div class="card kpi"><div class="label" id="kCostLabel">Spend</div><div class="value" id="kCost">–</div><div class="sub" id="kCostSub"></div><div class="meter hide" id="kBudget"><div></div></div></div>
   <div class="card kpi"><div class="label">Total tokens</div><div class="value" id="kTokens">–</div><div class="sub" id="kTokensSub"></div></div>
-  <div class="card kpi"><div class="label" title="Tokens × Anthropic/OpenAI API list prices from pricing.json. Not your bill if you are on a subscription.">API-equivalent cost</div><div class="value" id="kCost">–</div><div class="sub" id="kCostSub"></div></div>
   <div class="card kpi"><div class="label">Prompts</div><div class="value" id="kPrompts">–</div><div class="sub" id="kPromptsSub"></div></div>
   <div class="card kpi"><div class="label">Cache hit rate</div><div class="value" id="kCache">–</div><div class="sub" id="kCacheSub"></div></div>
   <div class="card kpi"><div class="label">Output tokens</div><div class="value" id="kOut">–</div><div class="sub" id="kOutSub"></div></div>
   <div class="card kpi"><div class="label">Model turns</div><div class="value" id="kTurns">–</div><div class="sub" id="kTurnsSub"></div></div>
 </div>
 
+<div class="card" id="promptsCard" style="margin-bottom:14px">
+  <h2>Prompts <span class="muted" id="promptCount"></span><span class="hint">Click a row for the full text and a resume command · click a header to sort</span></h2>
+  <div class="scroll" style="max-height:520px"><table id="prompts"></table></div>
+</div>
+
+<div class="grid two">
+  <div class="card"><h2>Usage limits <span class="hint">rolling windows, independent of the range filter</span></h2><div class="limits" id="limits"></div></div>
+  <div class="card"><h2>Active sessions <span class="hint">context fill, last 24 hours</span></h2><div class="sess" id="sessions"></div></div>
+</div>
+
 <div class="card" id="chartCard" style="margin-bottom:14px">
   <h2>
-    <span id="chartTitle">Usage over time</span>
+    <span>Usage over time</span>
     <div class="seg" id="metric" style="font-size:12px"><button data-v="tokens" class="on">Tokens</button><button data-v="cost">Cost</button><button data-v="prompts">Prompts</button></div>
     <button class="btn" id="tableToggle" style="padding:3px 8px;font-size:12px">Table</button>
-    <div class="legend"><span><i class="sw-claude"></i>Claude Code</span><span><i class="sw-codex"></i>Codex</span></div>
+    <div class="legend" id="legend"></div>
   </h2>
   <div class="chart-wrap" id="chartWrap"><svg class="chart" id="chart"></svg><div class="tip" id="tip"></div></div>
   <div class="scroll hide" id="chartTable"></div>
@@ -146,75 +170,106 @@ footer code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
     <h2>Token mix</h2>
     <div class="mix" id="mix"></div>
     <div class="mixlist" id="mixList"></div>
-    <p class="muted" style="margin:14px 0 0">Cache reads are billed at a fraction of fresh input. Thinking tokens are included in output.</p>
+    <h2 style="margin-top:18px">Cost mix <span class="muted" style="font-weight:400">same tokens, weighted by price</span></h2>
+    <div class="mix" id="costMix"></div>
+    <div class="mixlist" id="costMixList"></div>
+    <p class="muted" style="margin:14px 0 0">Cache reads are cheap, cache writes and output are not. Thinking tokens are included in output.</p>
   </div>
-  <div class="card">
-    <h2>By model</h2>
-    <div class="scroll"><table id="byModel"></table></div>
-  </div>
+  <div class="card"><h2>By model</h2><div class="scroll"><table id="byModel"></table></div></div>
 </div>
 
 <div class="grid two">
-  <div class="card"><h2>By project</h2><div class="scroll"><table id="byProject"></table></div></div>
-  <div class="card"><h2>Top sessions</h2><div class="scroll"><table id="bySession"></table></div></div>
+  <div class="card"><h2>Cache misses <span class="hint" id="missHint"></span></h2><div class="scroll"><table id="misses"></table></div></div>
+  <div class="card"><h2>Most expensive prompts</h2><div class="scroll"><table id="expensive"></table></div></div>
 </div>
 
-<div class="card" id="promptsCard" style="margin-bottom:14px">
-  <h2>Prompts <span class="muted" id="promptCount"></span><span class="muted" style="margin-left:auto;font-weight:400">Click a row for the full text and a resume command</span></h2>
-  <div class="scroll" style="max-height:520px"><table id="prompts"></table></div>
+<div class="grid two">
+  <div class="card"><h2>Cost per commit <span class="hint">turns between one commit and the next, per repo</span></h2><div class="scroll"><table id="commits"></table></div></div>
+  <div class="card"><h2>By project</h2><div class="scroll"><table id="byProject"></table></div></div>
 </div>
+
+<div class="card" style="margin-bottom:14px"><h2>Top sessions</h2><div class="scroll"><table id="bySession"></table></div></div>
 
 <div class="card">
   <h2>Live feed <span class="muted" id="feedCount"></span></h2>
   <div class="scroll"><table id="feed"></table></div>
 </div>
 
-<footer>
-  <span id="srcClaude"></span><span id="srcCodex"></span><span id="scanned"></span>
-</footer>
+<footer><span id="srcClaude"></span><span id="srcCodex"></span><span id="srcCopilot"></span><span id="scanned"></span></footer>
 </div>
 
 <script>
 const $ = id => document.getElementById(id);
-const state = { range: '30', tool: 'all', project: '', model: '', metric: 'tokens', table: false, data: null, version: null, seen: new Set(), open: new Set() };
-const TOOL_NAME = { claude: 'Claude Code', codex: 'Codex' };
+const TOOLS = { claude: 'Claude Code', codex: 'Codex', copilot: 'Copilot' };
+const DEFAULTS = { range: '30', tool: 'all', metric: 'tokens' };
+const state = { range: '30', tool: 'all', project: '', model: '', user: '', metric: 'tokens', table: false, data: null, commits: {}, version: null, seen: new Set(), open: new Set(), sort: {} };
 const fmt = n => n >= 1e9 ? (n / 1e9).toFixed(2) + 'B' : n >= 1e6 ? (n / 1e6).toFixed(2) + 'M' : n >= 1e3 ? (n / 1e3).toFixed(1) + 'K' : String(Math.round(n));
-const usd = n => n == null ? '–' : n >= 100 ? '$' + Math.round(n).toLocaleString() : n >= 1 ? '$' + n.toFixed(2) : '$' + n.toFixed(3);
+const usd = n => n == null ? '–' : n === 0 ? '$0' : n >= 100 ? '$' + Math.round(n).toLocaleString() : n >= 1 ? '$' + n.toFixed(2) : '$' + n.toFixed(3);
 const pct = n => isFinite(n) ? (n * 100).toFixed(n < 0.1 ? 1 : 0) + '%' : '–';
 const total = r => r.in + r.cr + r.cw5 + r.cw1h + r.out;
-const short = p => (p || 'unknown').replace(/^\/Users\/[^/]+/, '~').replace(/^-Users-[^-]+/, '~');
-const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const short = p => (p || 'unknown').replace(/^\/Users\/[^/]+/, '~').replace(/^\/home\/[^/]+/, '~').replace(/^-Users-[^-]+/, '~');
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const ago = ts => { const m = (Date.now() - new Date(ts)) / 60000; return m < 1 ? 'just now' : m < 60 ? Math.round(m) + 'm ago' : m < 1440 ? Math.round(m / 60) + 'h ago' : Math.round(m / 1440) + 'd ago'; };
+const when = ts => new Date(ts).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+const toolDot = t => `<span class="tool" style="background:var(--${t})"></span>${TOOLS[t] || t}`;
+const prefixLookup = (table, key) => { let best = null; for (const k in table) if (key.startsWith(k) && (!best || k.length > best.length)) best = k; return best ? table[best] : null; };
+const sum = (arr, f) => arr.reduce((a, r) => a + (f(r) || 0), 0);
 
 function bounds() {
   const now = new Date();
   if (state.range === 'all') return [null, now];
-  if (state.range === 'today') { const s = new Date(now); s.setHours(0, 0, 0, 0); return [s, now]; }
-  const s = new Date(now); s.setHours(0, 0, 0, 0); s.setDate(s.getDate() - (+state.range - 1)); return [s, now];
+  const s = new Date(now); s.setHours(0, 0, 0, 0);
+  if (state.range !== 'today') s.setDate(s.getDate() - (+state.range - 1));
+  return [s, now];
 }
-function inRange(ts, [s, e]) { const t = new Date(ts); return (!s || t >= s) && t <= e; }
-function passes(r, b) {
-  return inRange(r.ts, b) && (state.tool === 'all' || r.tool === state.tool) && (!state.project || r.project === state.project) && (!state.model || r.model === state.model);
+const inRange = (ts, [s, e]) => { const t = new Date(ts); return (!s || t >= s) && t <= e; };
+const baseFilter = r => (state.tool === 'all' || r.tool === state.tool) && (!state.user || r.user === state.user) && (!state.project || r.project === state.project);
+const passes = (r, b) => inRange(r.ts, b) && baseFilter(r) && (!state.model || r.model === state.model);
+const prevBounds = ([s, e]) => s ? [new Date(s - (e - s)), s] : null;
+
+function attribute(recs, prompts) {
+  const bySession = new Map();
+  for (const p of prompts) { if (!bySession.has(p.session)) bySession.set(p.session, []); bySession.get(p.session).push({ p, turns: 0, tokens: 0, cost: 0, priced: true, last: p.ts }); }
+  const owner = new Map();
+  for (const r of recs) {
+    const list = bySession.get(r.session); if (!list) continue;
+    let g = null; for (const x of list) { if (x.p.ts <= r.ts) g = x; else break; }
+    if (!g) continue;
+    g.turns++; g.tokens += total(r); g.cost += r.cost || 0; if (r.cost == null) g.priced = false; if (r.ts > g.last) g.last = r.ts; owner.set(r, g);
+  }
+  const groups = [...bySession.values()].flat().map(g => Object.assign(g, { dur: new Date(g.last) - new Date(g.p.ts), text: g.p.text || '', ts: g.p.ts, tool: g.p.tool, project: g.p.project }));
+  return { groups, owner };
 }
-function prevBounds([s, e]) { if (!s) return null; const len = e - s; return [new Date(s - len), s]; }
+
+function table(id, cols, rows, opts = {}) {
+  const st = state.sort[id] || (state.sort[id] = { k: opts.sort || cols[0].k, dir: -1 });
+  const col = cols.find(c => c.k === st.k) || cols[0];
+  rows = [...rows].sort((a, b) => { const x = a[col.k], y = b[col.k]; const r = typeof x === 'number' || typeof y === 'number' ? (x || 0) - (y || 0) : String(x ?? '').localeCompare(String(y ?? '')); return r * st.dir; });
+  if (opts.limit) rows = rows.slice(0, opts.limit);
+  const head = cols.map(c => `<th class="${c.n ? 'n' : ''} ${c.k === col.k ? 'on' : ''}" data-k="${c.k}">${c.label}${c.k === col.k ? (st.dir < 0 ? ' ▼' : ' ▲') : ''}</th>`).join('');
+  const body = rows.map((r, i) => `<tr ${opts.attrs ? opts.attrs(r, i) : ''}>${cols.map(c => `<td class="${c.n ? 'n' : ''} ${c.cls || ''}" ${c.title ? `title="${esc(c.title(r))}"` : ''}>${c.fmt ? c.fmt(r[c.k], r) : esc(r[c.k])}</td>`).join('')}</tr>${opts.extra ? opts.extra(r, i) : ''}`).join('');
+  const el = $(id);
+  el.innerHTML = rows.length ? `<tr>${head}</tr>${body}` : `<tr><td class="empty">${opts.empty || 'No data in this range'}</td></tr>`;
+  el.querySelectorAll('th').forEach(th => th.onclick = () => { if (st.k === th.dataset.k) st.dir *= -1; else { st.k = th.dataset.k; st.dir = -1; } render(); });
+  return rows;
+}
+const costCell = (v, r) => r.priced === false ? '<span class="muted">unpriced</span>' : usd(v);
+const tokCell = max => (v, r) => `${fmt(v)}<span class="bar" style="width:${Math.round(v / max * 48)}px"></span>`;
 
 function render() {
   const d = state.data; if (!d) return;
   const b = bounds();
   const recs = d.records.filter(r => passes(r, b));
-  const prompts = d.prompts.filter(p => inRange(p.ts, b) && (state.tool === 'all' || p.tool === state.tool) && (!state.project || p.project === state.project));
+  const prompts = d.prompts.filter(p => inRange(p.ts, b) && baseFilter(p));
   const pb = prevBounds(b);
   const prev = pb ? d.records.filter(r => passes(r, pb)) : null;
-  const sum = (arr, f) => arr.reduce((a, r) => a + (f(r) || 0), 0);
   const tokens = sum(recs, total), cost = sum(recs, r => r.cost), out = sum(recs, r => r.out);
   const cacheIn = sum(recs, r => r.cr), freshIn = sum(recs, r => r.in + r.cw5 + r.cw1h);
   const unpriced = recs.filter(r => r.cost == null);
   const delta = (cur, prevVal) => prev && prevVal > 0 ? `<b>${cur >= prevVal ? '+' : ''}${pct((cur - prevVal) / prevVal)}</b> vs previous period` : '';
+  renderCost(recs, cost, prev);
   $('kTokens').textContent = fmt(tokens);
-  $('kTokensSub').innerHTML = delta(tokens, prev && sum(prev, total)) || `${fmt(sum(recs.filter(r => r.tool === 'claude'), total))} Claude · ${fmt(sum(recs.filter(r => r.tool === 'codex'), total))} Codex`;
-  $('kCost').textContent = usd(cost);
-  const days = { today: 1, 7: 7, 30: 30 }[state.range];
-  const plan = days && Object.entries(d.plans || {}).filter(([k]) => state.tool === 'all' || k === state.tool).reduce((a, [, v]) => a + v, 0) * days / 30;
-  $('kCostSub').innerHTML = plan && cost ? `<b>${(cost / plan).toFixed(1)}×</b> your $${Math.round(plan)} subscription for this period` : delta(cost, prev && sum(prev, r => r.cost)) || 'at API list prices';
+  $('kTokensSub').innerHTML = delta(tokens, prev && sum(prev, total)) || Object.keys(TOOLS).filter(t => state.tool === 'all' || t === state.tool).map(t => `${fmt(sum(recs.filter(r => r.tool === t), total))} ${TOOLS[t]}`).join(' · ');
   $('kPrompts').textContent = prompts.length.toLocaleString();
   $('kPromptsSub').innerHTML = prompts.length ? `<b>${fmt(tokens / prompts.length)}</b> tokens per prompt` : '';
   $('kCache').textContent = pct(cacheIn / (cacheIn + freshIn));
@@ -226,34 +281,114 @@ function render() {
   const unknownModels = [...new Set(unpriced.map(r => r.model))];
   $('unpriced').classList.toggle('hide', !unknownModels.length);
   $('unpriced').innerHTML = `${unpriced.length} turns excluded from cost: no pricing for <b>${unknownModels.map(esc).join(', ')}</b>. Add them to <code>pricing.json</code> next to server.py.`;
+  $('alerts').classList.toggle('hide', !d.alerts.length);
+  $('alerts').innerHTML = d.alerts.slice(-3).map(a => `<b>${esc(a.title)}</b> ${esc(a.body)} <span class="muted">${ago(a.ts * 1000)}</span>`).join('<br>');
+  const att = attribute(recs, prompts);
+  renderLimits();
+  renderSessions();
   renderChart(recs, prompts, b);
   renderMix(recs);
-  renderGroup('byModel', recs, r => r.model, 'Model', tokens, cost);
-  renderGroup('byProject', recs, r => short(r.project), 'Project', tokens, cost);
-  renderGroup('bySession', recs, r => (r.session || '').slice(0, 8) + ' · ' + short(r.project), 'Session', tokens, cost, 15);
-  renderPrompts(recs, prompts);
+  const groups = keyFn => { const m = new Map(); for (const r of recs) { const k = keyFn(r); const g = m.get(k) || { k, tool: r.tool, turns: 0, tokens: 0, cost: 0, priced: true, share: 0 }; g.turns++; g.tokens += total(r); g.cost += r.cost || 0; if (r.cost == null) g.priced = false; if (g.tool !== r.tool) g.tool = 'mixed'; m.set(k, g); } const rows = [...m.values()]; rows.forEach(g => g.share = g.tokens / Math.max(1, tokens)); return rows; };
+  const nameCell = (v, r) => `${r.tool !== 'mixed' ? `<span class="tool" style="background:var(--${r.tool})"></span>` : ''}${esc(v)}`;
+  const groupCols = (label, rows) => [{ k: 'k', label, fmt: nameCell, cls: 'trunc', title: r => r.k }, { k: 'turns', label: 'Turns', n: 1 }, { k: 'tokens', label: 'Tokens', n: 1, fmt: tokCell(Math.max(1, ...rows.map(x => x.tokens))) }, { k: 'cost', label: 'Cost', n: 1, fmt: costCell }, { k: 'share', label: '% of tokens', n: 1, fmt: pct }];
+  let rows = groups(r => r.model); table('byModel', groupCols('Model', rows), rows, { sort: 'tokens' });
+  rows = groups(r => short(r.project)); table('byProject', groupCols('Project', rows), rows, { sort: 'tokens' });
+  const firstPrompt = new Map();
+  for (const p of d.prompts) if (p.text && !firstPrompt.has(p.session)) firstPrompt.set(p.session, p.text.replace(/\s+/g, ' ').slice(0, 60));
+  rows = groups(r => firstPrompt.get(r.session) || ((r.session || '').slice(0, 8) + ' · ' + short(r.project))); table('bySession', groupCols('Session', rows), rows, { sort: 'tokens', limit: 20 });
+  renderPrompts(att.groups, prompts.length);
+  renderExpensive(att.groups);
+  renderMisses(recs, att.owner);
+  renderCommits(recs);
   renderFeed(recs);
   $('csv').href = '/api/export.csv' + (b[0] ? '?since=' + b[0].toISOString() : '');
 }
 
+function renderCost(recs, cost, prev) {
+  const d = state.data;
+  const days = { today: 1, 7: 7, 30: 30 }[state.range] || (d.records.length ? Math.max(30, (Date.now() - new Date(d.records[0].ts)) / 86400000) : 30);
+  const users = state.user ? 1 : Math.max(1, d.users.length);
+  const plan = Object.entries(d.plans || {}).filter(([k]) => state.tool === 'all' || k === state.tool).reduce((a, [, v]) => a + v, 0) * days / 30 * users;
+  const unpriced = recs.filter(r => r.cost == null).length;
+  const prevCost = prev ? sum(prev, r => r.cost) : 0;
+  const apiLine = `API-equivalent <b>${usd(cost)}</b>${unpriced ? ` <span class="muted">(${unpriced} unpriced turns excluded)</span>` : ''}`;
+  if (plan > 0) {
+    $('kCostLabel').textContent = 'Subscription spend';
+    $('kCost').textContent = usd(plan);
+    $('kCostSub').innerHTML = apiLine + (cost ? `, <b>${(cost / plan).toFixed(1)}×</b> what you paid` : '');
+  } else {
+    $('kCostLabel').textContent = 'API-equivalent cost';
+    $('kCost').textContent = usd(cost);
+    $('kCostSub').innerHTML = (prevCost > 0 ? `<b>${cost >= prevCost ? '+' : ''}${pct((cost - prevCost) / prevCost)}</b> vs previous period` : 'at API list prices, from pricing.json') + (unpriced ? ` · ${unpriced} unpriced turns excluded` : '');
+  }
+  const budget = state.range === 'today' ? d.budget.daily : state.range === '30' ? d.budget.monthly : null;
+  $('kBudget').classList.toggle('hide', !budget);
+  if (budget) { const f = cost / budget; $('kBudget').className = 'meter' + (f > 1 ? ' bad' : f > 0.8 ? ' warn' : ''); $('kBudget').firstElementChild.style.width = Math.min(100, f * 100) + '%'; $('kCostSub').innerHTML += `<br><b>${pct(f)}</b> of ${usd(budget)} ${state.range === 'today' ? 'daily' : 'monthly'} budget`; }
+}
+
+function renderLimits() {
+  const d = state.data, now = Date.now();
+  const mine = d.records.filter(r => !state.user || r.user === state.user);
+  const window = (tool, ms) => { const rs = mine.filter(r => r.tool === tool && now - new Date(r.ts) < ms); return { tokens: sum(rs, total), cost: sum(rs, r => r.cost) }; };
+  const meter = (f, label, right) => `<div class="row"><span>${label}</span><b>${right}</b></div><div class="meter ${f > 0.9 ? 'bad' : f > 0.7 ? 'warn' : ''}"><div style="width:${Math.min(100, f * 100)}%"></div></div>`;
+  const local = tool => { const h = window(tool, 5 * 3600e3), w = window(tool, 7 * 86400e3); return `<div class="row"><span>Last 5 hours</span><b>${fmt(h.tokens)} · ${usd(h.cost)}</b></div><div class="row"><span>Last 7 days</span><b>${fmt(w.tokens)} · ${usd(w.cost)}</b></div>`; };
+  const resets = t => { const ms = (typeof t === 'number' ? t * 1000 : new Date(t)) - now; return ms <= 0 ? 'reset due' : ms < 3600e3 ? `resets in ${Math.round(ms / 60000)}m` : ms < 86400e3 ? `resets in ${(ms / 3600e3).toFixed(1)}h` : `resets in ${(ms / 86400e3).toFixed(1)}d`; };
+  const blocks = [];
+  if (state.tool === 'all' || state.tool === 'claude') {
+    let body = '';
+    const c = d.limits.claude;
+    if (c && typeof c === 'object') for (const [k, v] of Object.entries(c)) if (v && typeof v === 'object' && 'utilization' in v) body += meter(v.utilization / 100, k.replace(/_/g, ' '), `${Math.round(v.utilization)}%${v.resets_at ? ' · ' + resets(v.resets_at) : ''}`);
+    body += local('claude');
+    if (!c) body += `<p class="muted" style="margin:8px 0 0">Anthropic does not write the plan limit % to disk. Tokenmeter shows it when a Claude Code OAuth token is available in the keychain.</p>`;
+    blocks.push(`<div><h3>${toolDot('claude')}</h3>${body}</div>`);
+  }
+  if (state.tool === 'all' || state.tool === 'codex') {
+    const c = d.limits.codex;
+    let body = c ? c.windows.map(w => { const stale = w.resets_at * 1000 < now; return meter(stale ? 0 : w.used_percent / 100, w.window_minutes === 300 ? '5-hour window' : w.window_minutes === 10080 ? 'Weekly window' : `${w.window_minutes} min window`, stale ? `was ${Math.round(w.used_percent)}%, window has reset` : `${Math.round(w.used_percent)}% · ${resets(w.resets_at)}`); }).join('') + `<p class="muted" style="margin:8px 0 0">${esc(c.plan || '')} plan · last reported by Codex ${ago(c.ts)}; refreshes on your next Codex turn</p>` : '<p class="muted" style="margin:8px 0 0">Codex reports its 5-hour and weekly limits in each session log. None recorded yet.</p>';
+    body += local('codex');
+    blocks.push(`<div><h3>${toolDot('codex')}</h3>${body}</div>`);
+  }
+  if ((state.tool === 'all' && mine.some(r => r.tool === 'copilot')) || state.tool === 'copilot') blocks.push(`<div><h3>${toolDot('copilot')}</h3>${local('copilot')}</div>`);
+  $('limits').innerHTML = blocks.join('');
+}
+
+function renderSessions() {
+  const d = state.data, now = Date.now();
+  const last = new Map();
+  for (const r of d.records) if (baseFilter(r) && now - new Date(r.ts) < 86400e3 && !r.sub) last.set(r.session, r);
+  const firstPrompt = new Map();
+  for (const p of d.prompts) if (p.text && !firstPrompt.has(p.session)) firstPrompt.set(p.session, p.text.replace(/\s+/g, ' ').slice(0, 70));
+  const rows = [...last.values()].sort((a, b) => b.ts.localeCompare(a.ts)).slice(0, 8).map(r => {
+    const ctx = r.in + r.cr + r.cw5 + r.cw1h;
+    const win = (r.tool === 'codex' && d.context_windows.codex) || prefixLookup(d.context_windows, r.model) || 200000;
+    const f = ctx / win;
+    return `<div class="item"><span class="name" title="${esc(r.session)}">${toolDot(r.tool)} ${esc(firstPrompt.get(r.session) || short(r.project))}</span><span class="muted">${esc(r.model)} · ${ago(r.ts)}</span><div class="meter ${f > 0.9 ? 'bad' : f > 0.7 ? 'warn' : ''}"><div style="width:${Math.min(100, f * 100)}%"></div></div><span class="muted">${fmt(ctx)} / ${fmt(win)} context (${pct(f)})</span><span class="muted">${esc(short(r.project))}</span></div>`;
+  });
+  $('sessions').innerHTML = rows.join('') || '<div class="empty">No sessions active in the last 24 hours</div>';
+}
+
 function buckets([s, e]) {
   const hourly = state.range === 'today';
-  const start = s ? new Date(s) : new Date(Math.min(...state.data.records.map(r => new Date(r.ts))));
+  const first = state.data.records.find(baseFilter);
+  const start = s ? new Date(s) : new Date(first ? first.ts : e);
   if (!s) start.setHours(0, 0, 0, 0);
   const keys = [];
-  for (let t = new Date(start); t <= e; hourly ? t.setHours(t.getHours() + 1) : t.setDate(t.getDate() + 1)) keys.push(new Date(t));
+  for (let t = new Date(start); t <= e && keys.length < 800; hourly ? t.setHours(t.getHours() + 1) : t.setDate(t.getDate() + 1)) keys.push(new Date(t));
   const keyOf = ts => { const t = new Date(ts); t.setMinutes(0, 0, 0); if (!hourly) t.setHours(0); return t.getTime(); };
   return { keys, keyOf, hourly };
 }
 
 function renderChart(recs, prompts, b) {
+  const tools = Object.keys(TOOLS).filter(t => state.tool === 'all' || t === state.tool);
+  $('legend').innerHTML = tools.map(t => `<span><i style="background:var(--${t})"></i>${TOOLS[t]}</span>`).join('');
   const { keys, keyOf, hourly } = buckets(b);
-  const byKey = new Map(keys.map(k => [k.getTime(), { claude: 0, codex: 0 }]));
+  const byKey = new Map(keys.map(k => [k.getTime(), Object.fromEntries(tools.map(t => [t, 0]))]));
   const src = state.metric === 'prompts' ? prompts : recs;
   const val = state.metric === 'tokens' ? total : state.metric === 'cost' ? (r => r.cost || 0) : (() => 1);
-  for (const r of src) { const k = keyOf(r.ts); if (byKey.has(k)) byKey.get(k)[r.tool] += val(r); }
-  const rows = keys.map(k => ({ k, ...byKey.get(k.getTime()) }));
-  const max = Math.max(1e-9, ...rows.map(r => r.claude + r.codex));
+  for (const r of src) { const k = keyOf(r.ts); if (byKey.has(k) && r.tool in byKey.get(k)) byKey.get(k)[r.tool] += val(r); }
+  const rows = keys.map(k => ({ k, v: byKey.get(k.getTime()) }));
+  const tot = r => tools.reduce((a, t) => a + r.v[t], 0);
+  const max = Math.max(1e-9, ...rows.map(tot));
   const W = $('chartWrap').clientWidth || 800, H = 260, padL = 44, padR = 8, padT = 10, padB = 26;
   const iw = W - padL - padR, ih = H - padT - padB;
   const n = rows.length, gap = n > 60 ? 1 : 2, bw = Math.max(1, iw / n - gap);
@@ -266,11 +401,14 @@ function renderChart(recs, prompts, b) {
   svg += `<g class="axis"><line x1="${padL}" x2="${W - padR}" y1="${padT + ih}" y2="${padT + ih}"/></g>`;
   rows.forEach((r, i) => {
     const x = padL + i * (iw / n) + gap / 2;
-    const hc = (r.claude / max) * ih, hx = (r.codex / max) * ih;
-    const yC = padT + ih - hc, yX = yC - hx - (hc && hx ? 2 : 0);
+    let top = padT + ih;
     svg += `<g class="col" data-i="${i}">`;
-    if (hc) svg += `<rect class="bar" x="${x}" y="${yC}" width="${bw}" height="${hc}" rx="${hx ? 0 : Math.min(4, bw / 2)}" fill="var(--claude)"/>`;
-    if (hx) svg += `<rect class="bar" x="${x}" y="${Math.max(padT, yX)}" width="${bw}" height="${hx}" rx="${Math.min(4, bw / 2)}" fill="var(--codex)"/>`;
+    tools.forEach((t, j) => {
+      const h = (r.v[t] / max) * ih; if (!h) return;
+      const isTop = tools.slice(j + 1).every(u => !r.v[u]);
+      top -= h + (top < padT + ih ? 2 : 0);
+      svg += `<rect class="bar" x="${x}" y="${Math.max(padT, top)}" width="${bw}" height="${h}" rx="${isTop ? Math.min(4, bw / 2) : 0}" fill="var(--${t})"/>`;
+    });
     svg += `<rect class="hit" x="${x - gap / 2}" y="${padT}" width="${bw + gap}" height="${ih}"/>`;
     if (i % every === 0) svg += `<text x="${x + bw / 2}" y="${H - 8}" text-anchor="middle">${lab(r.k)}</text>`;
     svg += '</g>';
@@ -282,76 +420,108 @@ function renderChart(recs, prompts, b) {
       const r = rows[+g.dataset.i];
       const rect = $('chartWrap').getBoundingClientRect();
       tip.style.left = (ev.clientX - rect.left) + 'px'; tip.style.top = (ev.clientY - rect.top) + 'px'; tip.style.opacity = 1;
-      const when = hourly ? r.k.toLocaleString(undefined, { hour: '2-digit', minute: '2-digit' }) : r.k.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
-      tip.innerHTML = `<b>${when}</b><div class="row"><span><i style="background:var(--claude)"></i>Claude Code</span><b>${fmtV(r.claude)}</b></div><div class="row"><span><i style="background:var(--codex)"></i>Codex</span><b>${fmtV(r.codex)}</b></div><div class="row" style="margin-top:4px;opacity:.8"><span>Total</span><b>${fmtV(r.claude + r.codex)}</b></div>`;
+      const label = hourly ? r.k.toLocaleString(undefined, { hour: '2-digit', minute: '2-digit' }) : r.k.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+      tip.innerHTML = `<b>${label}</b>` + tools.map(t => `<div class="row"><span><i style="background:var(--${t})"></i>${TOOLS[t]}</span><b>${fmtV(r.v[t])}</b></div>`).join('') + `<div class="row" style="margin-top:4px;opacity:.8"><span>Total</span><b>${fmtV(tot(r))}</b></div>`;
     };
     g.onmouseleave = () => tip.style.opacity = 0;
   });
-  $('chartTable').innerHTML = `<table><tr><th>${hourly ? 'Hour' : 'Day'}</th><th class="n">Claude Code</th><th class="n">Codex</th><th class="n">Total</th></tr>${rows.filter(r => r.claude || r.codex).map(r => `<tr><td>${hourly ? r.k.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }) : r.k.toLocaleDateString()}</td><td class="n">${fmtV(r.claude)}</td><td class="n">${fmtV(r.codex)}</td><td class="n">${fmtV(r.claude + r.codex)}</td></tr>`).join('')}</table>`;
+  $('chartTable').innerHTML = `<table><tr><th>${hourly ? 'Hour' : 'Day'}</th>${tools.map(t => `<th class="n">${TOOLS[t]}</th>`).join('')}<th class="n">Total</th></tr>${rows.filter(tot).map(r => `<tr><td>${hourly ? r.k.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }) : r.k.toLocaleDateString()}</td>${tools.map(t => `<td class="n">${fmtV(r.v[t])}</td>`).join('')}<td class="n">${fmtV(tot(r))}</td></tr>`).join('')}</table>`;
 }
 
 function renderMix(recs) {
-  const parts = [['Input', r => r.in, 'var(--mix-1)'], ['Cache read', r => r.cr, 'var(--mix-2)'], ['Cache write', r => r.cw5 + r.cw1h, 'var(--mix-3)'], ['Output', r => r.out, 'var(--mix-4)']]
-    .map(([name, f, c]) => ({ name, c, v: recs.reduce((a, r) => a + f(r), 0) }));
-  const t = Math.max(1, parts.reduce((a, p) => a + p.v, 0));
-  $('mix').innerHTML = parts.map(p => `<div title="${p.name} ${fmt(p.v)}" style="width:${(p.v / t * 100).toFixed(2)}%;background:${p.c}"></div>`).join('');
-  $('mixList').innerHTML = parts.map(p => `<div><i style="background:${p.c}"></i>${p.name}<b>${fmt(p.v)} <span class="muted">${pct(p.v / t)}</span></b></div>`).join('');
+  const P = state.data.pricing;
+  const priced = recs.filter(r => P[r.model]);
+  const parts = [['Input', r => r.in, r => r.in * P[r.model].input, 'var(--mix-1)'], ['Cache read', r => r.cr, r => r.cr * P[r.model].cache_read, 'var(--mix-2)'], ['Cache write', r => r.cw5 + r.cw1h, r => r.cw5 * P[r.model].cache_write_5m + r.cw1h * P[r.model].cache_write_1h, 'var(--mix-3)'], ['Output', r => r.out, r => r.out * P[r.model].output, 'var(--mix-4)']]
+    .map(([name, f, g, c]) => ({ name, c, v: sum(recs, f), usd: sum(priced, g) / 1e6 }));
+  const bar = (id, listId, key, fmtV) => {
+    const t = Math.max(1e-9, sum(parts, p => p[key]));
+    $(id).innerHTML = parts.map(p => `<div title="${p.name} ${fmtV(p[key])}" style="width:${(p[key] / t * 100).toFixed(2)}%;background:${p.c}"></div>`).join('');
+    $(listId).innerHTML = parts.map(p => `<div><i style="background:${p.c}"></i>${p.name}<b>${fmtV(p[key])} <span class="muted">${pct(p[key] / t)}</span></b></div>`).join('');
+  };
+  bar('mix', 'mixList', 'v', fmt);
+  bar('costMix', 'costMixList', 'usd', usd);
 }
 
-function renderGroup(id, recs, keyFn, label, tokAll, costAll, limit = 50) {
-  const m = new Map();
-  for (const r of recs) {
-    const k = keyFn(r); const g = m.get(k) || { k, tool: r.tool, turns: 0, tokens: 0, out: 0, cost: 0, priced: true, last: '' };
-    g.turns++; g.tokens += total(r); g.out += r.out; g.cost += r.cost || 0; if (r.cost == null) g.priced = false; if (r.ts > g.last) g.last = r.ts; if (g.tool !== r.tool) g.tool = 'mixed';
-    m.set(k, g);
-  }
-  const rows = [...m.values()].sort((a, b) => b.tokens - a.tokens).slice(0, limit);
-  const max = rows[0]?.tokens || 1;
-  $(id).innerHTML = rows.length ? `<tr><th>${label}</th><th class="n">Turns</th><th class="n">Tokens</th><th class="n">Cost</th><th class="n">Share</th></tr>` + rows.map(g =>
-    `<tr><td class="trunc" title="${esc(g.k)}">${g.tool !== 'mixed' ? `<span class="tool" style="background:var(--${g.tool})"></span>` : ''}${esc(g.k)}</td><td class="n">${g.turns}</td><td class="n">${fmt(g.tokens)}<span class="bar" style="width:${Math.round(g.tokens / max * 48)}px"></span></td><td class="n">${g.priced ? usd(g.cost) : '<span class="muted">unpriced</span>'}</td><td class="n">${pct(g.tokens / Math.max(1, tokAll))}</td></tr>`).join('') : '<tr><td class="empty">No data in this range</td></tr>';
-}
-
-function renderPrompts(recs, prompts) {
-  const bySession = new Map();
-  for (const p of prompts) { if (!bySession.has(p.session)) bySession.set(p.session, []); bySession.get(p.session).push({ p, turns: 0, tokens: 0, cost: 0, priced: true, last: p.ts }); }
-  for (const r of recs) {
-    const list = bySession.get(r.session); if (!list) continue;
-    let g = null; for (const x of list) { if (x.p.ts <= r.ts) g = x; else break; }
-    if (!g) continue;
-    g.turns++; g.tokens += total(r); g.cost += r.cost || 0; if (r.cost == null) g.priced = false; if (r.ts > g.last) g.last = r.ts;
-  }
-  const rows = [...bySession.values()].flat().sort((a, b) => b.p.ts.localeCompare(a.p.ts)).slice(0, 100);
-  $('promptCount').textContent = rows.length ? `· latest ${rows.length} of ${prompts.length.toLocaleString()}` : '';
-  const cmd = p => p.tool === 'claude' ? `claude --resume ${p.session}` : `codex resume ${p.session}`;
-  const dur = g => { const ms = new Date(g.last) - new Date(g.p.ts); return ms < 1000 ? '' : ms < 60000 ? Math.round(ms / 1000) + 's' : Math.round(ms / 60000) + 'm'; };
-  $('prompts').innerHTML = rows.length ? `<tr><th>Time</th><th>Tool</th><th>Project</th><th>Prompt</th><th class="n">Turns</th><th class="n">Tokens</th><th class="n">Cost</th><th class="n">Took</th></tr>` + rows.map((g, i) => {
-    const text = g.p.text || '';
-    const preview = text ? esc(text.replace(/\s+/g, ' ').slice(0, 110)) + (text.length > 110 ? '…' : '') : '<span class="muted">context-only turn, no prompt text</span>';
-    return `<tr class="prow" data-i="${i}"><td class="mono">${new Date(g.p.ts).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</td><td><span class="tool" style="background:var(--${g.p.tool})"></span>${TOOL_NAME[g.p.tool]}</td><td class="trunc" style="max-width:120px" title="${esc(g.p.project)}">${esc(short(g.p.project))}</td><td class="ptext">${preview}</td><td class="n">${g.turns}</td><td class="n">${fmt(g.tokens)}</td><td class="n">${g.priced ? usd(g.cost) : '<span class="muted">–</span>'}</td><td class="n muted">${dur(g)}</td></tr>` +
-      `<tr class="pfull ${state.open.has(g.p.id) ? '' : 'hide'}" data-i="${i}"><td colspan="8"><div class="full">${esc(text) || '<span class="muted">No plain-text prompt was recorded for this turn.</span>'}</div><div class="muted" style="margin-top:8px">Resume this session: <code>${cmd(g.p)}</code> · prompt id <code>${esc(g.p.id || '')}</code></div></td></tr>`;
-  }).join('') : '<tr><td class="empty">No prompts in this range</td></tr>';
-  $('prompts').querySelectorAll('tr.prow').forEach(tr => tr.onclick = () => {
-    const id = rows[+tr.dataset.i].p.id;
-    state.open.has(id) ? state.open.delete(id) : state.open.add(id);
-    $('prompts').querySelector(`tr.pfull[data-i="${tr.dataset.i}"]`).classList.toggle('hide', !state.open.has(id));
+const promptCols = () => [
+  { k: 'ts', label: 'Time', cls: 'mono', fmt: when },
+  { k: 'tool', label: 'Tool', fmt: toolDot },
+  { k: 'project', label: 'Project', cls: 'trunc', title: r => r.project, fmt: short },
+  { k: 'text', label: 'Prompt', cls: 'wrap', fmt: v => v ? esc(v.replace(/\s+/g, ' ').slice(0, 110)) + (v.length > 110 ? '…' : '') : '<span class="muted">context-only turn, no prompt text</span>' },
+  { k: 'turns', label: 'Turns', n: 1 },
+  { k: 'tokens', label: 'Tokens', n: 1, fmt: fmt },
+  { k: 'cost', label: 'Cost', n: 1, fmt: costCell },
+  { k: 'dur', label: 'Took', n: 1, fmt: ms => ms < 1000 ? '' : ms < 60000 ? Math.round(ms / 1000) + 's' : Math.round(ms / 60000) + 'm' },
+];
+const resumeCmd = p => ({ claude: `claude --resume ${p.session}`, codex: `codex resume ${p.session}`, copilot: `copilot --resume ${p.session}` })[p.tool];
+const promptExtra = cols => g => `<tr class="pfull ${state.open.has(g.p.id) ? '' : 'hide'}"><td colspan="${cols}"><div class="full">${esc(g.text) || '<span class="muted">No plain-text prompt was recorded for this turn.</span>'}</div><div class="muted" style="margin-top:8px">Resume this session: <code>${esc(resumeCmd(g.p))}</code> · prompt id <code>${esc(g.p.id)}</code>${g.p.user !== state.data.me ? ` · by <b>${esc(g.p.user)}</b>` : ''}</div></td></tr>`;
+function wireExpand(id, rows) {
+  $(id).querySelectorAll('tr.prow').forEach((tr, i) => tr.onclick = () => {
+    const pid = rows[i].p.id;
+    state.open.has(pid) ? state.open.delete(pid) : state.open.add(pid);
+    tr.nextElementSibling.classList.toggle('hide', !state.open.has(pid));
   });
+}
+function renderPrompts(groups, totalPrompts) {
+  $('promptCount').textContent = groups.length ? `· ${Math.min(150, groups.length)} of ${totalPrompts.toLocaleString()}` : '';
+  wireExpand('prompts', table('prompts', promptCols(), groups, { sort: 'ts', limit: 150, attrs: () => 'class="prow"', extra: promptExtra(8), empty: 'No prompts in this range' }));
+}
+function renderExpensive(groups) {
+  const cols = promptCols().filter(c => ['ts', 'tool', 'text', 'turns', 'tokens', 'cost'].includes(c.k));
+  wireExpand('expensive', table('expensive', cols, groups.filter(g => g.cost > 0), { sort: 'cost', limit: 10, attrs: () => 'class="prow"', extra: promptExtra(6), empty: 'No priced prompts in this range' }));
+}
+
+function renderMisses(recs, owner) {
+  const P = state.data.pricing;
+  const bySession = new Map();
+  for (const r of recs) { if (r.sub) continue; if (!bySession.has(r.session)) bySession.set(r.session, []); bySession.get(r.session).push(r); }
+  const misses = [];
+  for (const list of bySession.values()) {
+    for (let i = 1; i < list.length; i++) {
+      const prev = list[i - 1], r = list[i], cw = r.cw5 + r.cw1h;
+      if (prev.cr > 50000 && r.cr < prev.cr * 0.5 && cw > 20000) {
+        const p = P[r.model], g = owner.get(r);
+        misses.push({ ts: r.ts, tool: r.tool, lost: prev.cr - r.cr, rewritten: cw, cost: p ? (r.cw5 * p.cache_write_5m + r.cw1h * p.cache_write_1h) / 1e6 : 0, priced: !!p, text: g ? g.text : '', project: r.project, p: g && g.p, g });
+      }
+    }
+  }
+  $('missHint').textContent = misses.length ? `${misses.length} misses · ${usd(sum(misses, m => m.cost))} spent re-writing cache` : 'none detected in this range';
+  const cols = [{ k: 'ts', label: 'Time', cls: 'mono', fmt: when }, { k: 'tool', label: 'Tool', fmt: toolDot }, { k: 'text', label: 'Prompt in progress', cls: 'wrap', fmt: (v, r) => v ? esc(v.replace(/\s+/g, ' ').slice(0, 80)) : `<span class="muted">${esc(short(r.project))}</span>` }, { k: 'lost', label: 'Cache lost', n: 1, fmt: fmt }, { k: 'rewritten', label: 'Re-written', n: 1, fmt: fmt }, { k: 'cost', label: 'Cost', n: 1, fmt: costCell }];
+  const rows = table('misses', cols, misses, { sort: 'cost', limit: 12, attrs: r => r.g ? 'class="prow"' : '', extra: r => r.g ? promptExtra(6)(r.g) : '', empty: 'No cache misses in this range. A miss is a turn where the cached prefix shrank by half and a large prefix was re-written, usually after editing history or a long idle gap.' });
+  wireExpand('misses', rows.filter(r => r.g));
+}
+
+function renderCommits(recs) {
+  const rows = [];
+  for (const [project, commits] of Object.entries(state.commits)) {
+    if (!commits.length) continue;
+    const sorted = [...commits].sort((a, b) => a.ts.localeCompare(b.ts));
+    const groups = new Map();
+    for (const r of recs.filter(r => r.project === project && r.user === state.data.me)) {
+      const c = sorted.find(c => c.ts >= r.ts) || { sha: 'uncommitted', ts: '', subject: 'Not committed yet' };
+      const g = groups.get(c.sha) || { sha: c.sha, subject: c.subject, ts: c.ts || r.ts, project: short(project), turns: 0, tokens: 0, cost: 0, priced: true };
+      g.turns++; g.tokens += total(r); g.cost += r.cost || 0; if (r.cost == null) g.priced = false; groups.set(c.sha, g);
+    }
+    rows.push(...groups.values());
+  }
+  const cols = [{ k: 'subject', label: 'Commit', cls: 'trunc commit', title: r => `${r.sha}\n${r.subject}`, fmt: (v, r) => `${r.sha === 'uncommitted' ? '' : `<span class="mono muted">${r.sha.slice(0, 7)}</span> `}${esc(v.slice(0, 44))}${v.length > 44 ? '…' : ''}` }, { k: 'project', label: 'Repo', cls: 'trunc repo', fmt: v => esc(v.split('/').pop()), title: r => r.project }, { k: 'ts', label: 'Date', cls: 'mono', fmt: v => new Date(v).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) }, { k: 'turns', label: 'Turns', n: 1 }, { k: 'tokens', label: 'Tokens', n: 1, fmt: fmt }, { k: 'cost', label: 'Cost', n: 1, fmt: costCell }];
+  table('commits', cols, rows, { sort: 'cost', limit: 15, empty: Object.keys(state.commits).length ? 'No turns in this range fall inside a git repository' : 'None of the projects with usage is a git repository on this machine' });
 }
 
 function renderFeed(recs) {
-  const rows = recs.slice(-60).reverse();
+  const rows = recs.slice(-80).map(r => Object.assign({ cw: r.cw5 + r.cw1h, id: r.ts + r.session + r.out }, r));
   $('feedCount').textContent = rows.length ? `· latest ${rows.length} of ${recs.length.toLocaleString()} turns` : '';
-  $('feed').innerHTML = rows.length ? `<tr><th>Time</th><th>Tool</th><th>Model</th><th>Project</th><th class="n">Input</th><th class="n">Cache read</th><th class="n">Cache write</th><th class="n">Output</th><th class="n">Cost</th></tr>` + rows.map(r => {
-    const id = r.ts + r.session + r.out; const isNew = state.seen.size && !state.seen.has(id); state.seen.add(id);
-    return `<tr class="${isNew ? 'new' : ''}"><td class="mono">${new Date(r.ts).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' })}</td><td><span class="tool" style="background:var(--${r.tool})"></span>${TOOL_NAME[r.tool]}${r.sub ? ' <span class="muted">sub</span>' : ''}</td><td class="mono">${esc(r.model)}</td><td class="trunc" title="${esc(r.project)}">${esc(short(r.project))}</td><td class="n">${fmt(r.in)}</td><td class="n">${fmt(r.cr)}</td><td class="n">${fmt(r.cw5 + r.cw1h)}</td><td class="n">${fmt(r.out)}</td><td class="n">${r.cost == null ? '<span class="muted">–</span>' : usd(r.cost)}</td></tr>`;
-  }).join('') : '<tr><td class="empty">No turns yet. Send a prompt in Claude Code or Codex and it will appear here.</td></tr>';
+  const cols = [{ k: 'ts', label: 'Time', cls: 'mono', fmt: v => new Date(v).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' }) }, { k: 'tool', label: 'Tool', fmt: (v, r) => toolDot(v) + (r.sub ? ' <span class="muted">sub</span>' : '') }, { k: 'model', label: 'Model', cls: 'mono' }, { k: 'project', label: 'Project', cls: 'trunc', title: r => r.project, fmt: short }, { k: 'in', label: 'Input', n: 1, fmt: fmt }, { k: 'cr', label: 'Cache read', n: 1, fmt: fmt }, { k: 'cw', label: 'Cache write', n: 1, fmt: fmt }, { k: 'out', label: 'Output', n: 1, fmt: fmt }, { k: 'cost', label: 'Cost', n: 1, fmt: v => v == null ? '<span class="muted">–</span>' : usd(v) }];
+  table('feed', cols, rows, { sort: 'ts', attrs: r => { const isNew = state.seen.size && !state.seen.has(r.id); state.seen.add(r.id); return isNew ? 'class="new"' : ''; }, empty: 'No turns yet. Send a prompt in Claude Code, Codex or Copilot and it will appear here.' });
 }
 
 function fillSelects() {
   const d = state.data;
-  const opts = (sel, values, cur) => { sel.innerHTML = sel.options[0].outerHTML + values.map(v => `<option value="${esc(v)}" ${v === cur ? 'selected' : ''}>${esc(sel === $('project') ? short(v) : v)}</option>`).join(''); };
+  const opts = (sel, values, cur, label) => { sel.innerHTML = sel.options[0].outerHTML + values.map(v => `<option value="${esc(v)}" ${v === cur ? 'selected' : ''}>${esc(label ? label(v) : v)}</option>`).join(''); };
   const count = f => [...d.records.reduce((m, r) => m.set(f(r), (m.get(f(r)) || 0) + total(r)), new Map()).entries()].sort((a, b) => b[1] - a[1]).map(e => e[0]);
-  opts($('project'), count(r => r.project), state.project);
+  opts($('project'), count(r => r.project), state.project, short);
   opts($('model'), count(r => r.model), state.model);
+  $('user').classList.toggle('hide', d.users.length < 2);
+  opts($('user'), d.users, state.user, u => u === d.me ? `${u} (me)` : u);
 }
 
 async function load() {
@@ -360,34 +530,37 @@ async function load() {
     if (v.version === state.version) return setLive(true);
     const d = await (await fetch('/api/usage')).json();
     state.data = d; state.version = d.version;
+    fetch('/api/commits').then(r => r.json()).then(c => { state.commits = c; render(); }).catch(() => {});
     fillSelects(); render();
+    $('firstRun').classList.toggle('hide', d.records.length > 0);
+    $('frClaude').textContent = d.sources.claude + '/projects'; $('frCodex').textContent = d.sources.codex + '/sessions'; $('frCopilot').textContent = d.sources.copilot;
     $('srcClaude').innerHTML = `Claude Code: <code>${esc(d.sources.claude)}/projects</code>`;
     $('srcCodex').innerHTML = `Codex: <code>${esc(d.sources.codex)}/sessions</code>`;
+    $('srcCopilot').innerHTML = `Copilot: <code>${esc(d.sources.copilot)}</code>`;
     $('scanned').textContent = `${d.records.length.toLocaleString()} turns indexed · updated ${new Date(d.generated * 1000).toLocaleTimeString()}`;
     setLive(true);
   } catch (e) { setLive(false); }
 }
+function setLive(ok) { $('live').classList.toggle('stale', !ok); $('liveText').textContent = ok ? 'live' : 'server unreachable'; }
 function readHash() {
   const h = new URLSearchParams(location.hash.slice(1));
-  for (const k of ['range', 'tool', 'metric', 'project', 'model']) if (h.get(k)) state[k] = h.get(k);
+  for (const k of ['range', 'tool', 'metric', 'project', 'model', 'user']) if (h.get(k)) state[k] = h.get(k);
   for (const id of ['range', 'tool', 'metric']) $(id).querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.v === state[id]));
   if (h.get('theme')) applyTheme(h.get('theme'));
   if (h.get('view')) setTimeout(() => $(h.get('view'))?.scrollIntoView(), 300);
 }
 function writeHash() {
   const h = new URLSearchParams();
-  for (const k of ['range', 'tool', 'metric', 'project', 'model']) if (state[k] && state[k] !== { range: '30', tool: 'all', metric: 'tokens' }[k]) h.set(k, state[k]);
+  for (const k of ['range', 'tool', 'metric', 'project', 'model', 'user']) if (state[k] && state[k] !== DEFAULTS[k]) h.set(k, state[k]);
   history.replaceState(null, '', h.toString() ? '#' + h : location.pathname);
 }
-function setLive(ok) { $('live').classList.toggle('stale', !ok); $('liveText').textContent = ok ? 'live' : 'server unreachable'; }
 
 for (const id of ['range', 'tool', 'metric']) $(id).addEventListener('click', e => {
   const btn = e.target.closest('button'); if (!btn) return;
   $(id).querySelectorAll('button').forEach(b => b.classList.toggle('on', b === btn));
   state[id] = btn.dataset.v; writeHash(); render();
 });
-$('project').onchange = e => { state.project = e.target.value; writeHash(); render(); };
-$('model').onchange = e => { state.model = e.target.value; writeHash(); render(); };
+for (const id of ['project', 'model', 'user']) $(id).onchange = e => { state[id] = e.target.value; writeHash(); render(); };
 $('tableToggle').onclick = () => { state.table = !state.table; $('chartWrap').classList.toggle('hide', state.table); $('chartTable').classList.toggle('hide', !state.table); $('tableToggle').textContent = state.table ? 'Chart' : 'Table'; };
 const applyTheme = t => { document.documentElement.dataset.theme = t; try { localStorage.setItem('tm-theme', t); } catch (e) {} };
 $('theme').onclick = () => applyTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark');
