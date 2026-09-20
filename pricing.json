@@ -1,5 +1,6 @@
 {
-  "_comment": "USD per 1M tokens. Keys are model-id prefixes, longest match wins. Edit freely; unknown models show as unpriced in the dashboard.",
+  "_comment": "USD per 1M tokens at API list price. Keys are model-id prefixes, longest match wins. Edit freely; unknown models show as unpriced in the dashboard.",
+  "_plans": {"_comment": "What you actually pay per month for each tool. Used only to show how much API-equivalent value your subscription delivered.", "claude": 100, "codex": 20},
   "claude-fable-5-1": {"input": 10, "cache_read": 0.25, "cache_write_5m": 12.5, "cache_write_1h": 20, "output": 50},
   "claude-fable-5": {"input": 10, "cache_read": 1, "cache_write_5m": 12.5, "cache_write_1h": 20, "output": 50},
   "claude-opus-5": {"input": 5, "cache_read": 0.5, "cache_write_5m": 6.25, "cache_write_1h": 10, "output": 25},

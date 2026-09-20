@@ -85,6 +85,11 @@ td .tool { display: inline-block; width: 8px; height: 8px; border-radius: 2px; m
 td .bar { display: inline-block; height: 6px; border-radius: 3px; background: var(--text); opacity: .18; vertical-align: middle; margin-left: 8px; }
 tr.new td { animation: flash 1.6s ease-out; }
 @keyframes flash { from { background: color-mix(in srgb, var(--claude) 18%, transparent); } to { background: transparent; } }
+tr.prow { cursor: pointer; } tr.prow:hover td { background: var(--line-soft); }
+td.ptext { white-space: normal; min-width: 180px; max-width: 420px; color: var(--text); }
+tr.pfull td { white-space: normal; background: var(--line-soft); padding: 12px 14px; }
+.full { white-space: pre-wrap; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; line-height: 1.5; max-height: 240px; overflow: auto; }
+tr.pfull code { font-family: ui-monospace, Menlo, monospace; background: var(--surface); padding: 1px 5px; border-radius: 4px; user-select: all; }
 .trunc { max-width: 260px; overflow: hidden; text-overflow: ellipsis; }
 .scroll { overflow: auto; max-height: 420px; }
 .muted { color: var(--text-3); font-size: 12px; }
@@ -118,14 +123,14 @@ footer code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
 
 <div class="grid kpis">
   <div class="card kpi"><div class="label">Total tokens</div><div class="value" id="kTokens">–</div><div class="sub" id="kTokensSub"></div></div>
-  <div class="card kpi"><div class="label">Estimated cost</div><div class="value" id="kCost">–</div><div class="sub" id="kCostSub"></div></div>
+  <div class="card kpi"><div class="label" title="Tokens × Anthropic/OpenAI API list prices from pricing.json. Not your bill if you are on a subscription.">API-equivalent cost</div><div class="value" id="kCost">–</div><div class="sub" id="kCostSub"></div></div>
   <div class="card kpi"><div class="label">Prompts</div><div class="value" id="kPrompts">–</div><div class="sub" id="kPromptsSub"></div></div>
   <div class="card kpi"><div class="label">Cache hit rate</div><div class="value" id="kCache">–</div><div class="sub" id="kCacheSub"></div></div>
   <div class="card kpi"><div class="label">Output tokens</div><div class="value" id="kOut">–</div><div class="sub" id="kOutSub"></div></div>
   <div class="card kpi"><div class="label">Model turns</div><div class="value" id="kTurns">–</div><div class="sub" id="kTurnsSub"></div></div>
 </div>
 
-<div class="card" style="margin-bottom:14px">
+<div class="card" id="chartCard" style="margin-bottom:14px">
   <h2>
     <span id="chartTitle">Usage over time</span>
     <div class="seg" id="metric" style="font-size:12px"><button data-v="tokens" class="on">Tokens</button><button data-v="cost">Cost</button><button data-v="prompts">Prompts</button></div>
@@ -136,7 +141,7 @@ footer code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
   <div class="scroll hide" id="chartTable"></div>
 </div>
 
-<div class="grid two">
+<div class="grid two" id="mixRow">
   <div class="card">
     <h2>Token mix</h2>
     <div class="mix" id="mix"></div>
@@ -154,6 +159,11 @@ footer code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
   <div class="card"><h2>Top sessions</h2><div class="scroll"><table id="bySession"></table></div></div>
 </div>
 
+<div class="card" id="promptsCard" style="margin-bottom:14px">
+  <h2>Prompts <span class="muted" id="promptCount"></span><span class="muted" style="margin-left:auto;font-weight:400">Click a row for the full text and a resume command</span></h2>
+  <div class="scroll" style="max-height:520px"><table id="prompts"></table></div>
+</div>
+
 <div class="card">
   <h2>Live feed <span class="muted" id="feedCount"></span></h2>
   <div class="scroll"><table id="feed"></table></div>
@@ -166,7 +176,7 @@ footer code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
 
 <script>
 const $ = id => document.getElementById(id);
-const state = { range: '30', tool: 'all', project: '', model: '', metric: 'tokens', table: false, data: null, version: null, seen: new Set() };
+const state = { range: '30', tool: 'all', project: '', model: '', metric: 'tokens', table: false, data: null, version: null, seen: new Set(), open: new Set() };
 const TOOL_NAME = { claude: 'Claude Code', codex: 'Codex' };
 const fmt = n => n >= 1e9 ? (n / 1e9).toFixed(2) + 'B' : n >= 1e6 ? (n / 1e6).toFixed(2) + 'M' : n >= 1e3 ? (n / 1e3).toFixed(1) + 'K' : String(Math.round(n));
 const usd = n => n == null ? '–' : n >= 100 ? '$' + Math.round(n).toLocaleString() : n >= 1 ? '$' + n.toFixed(2) : '$' + n.toFixed(3);
@@ -202,7 +212,9 @@ function render() {
   $('kTokens').textContent = fmt(tokens);
   $('kTokensSub').innerHTML = delta(tokens, prev && sum(prev, total)) || `${fmt(sum(recs.filter(r => r.tool === 'claude'), total))} Claude · ${fmt(sum(recs.filter(r => r.tool === 'codex'), total))} Codex`;
   $('kCost').textContent = usd(cost);
-  $('kCostSub').innerHTML = unpriced.length ? `${unpriced.length} unpriced turns excluded` : delta(cost, prev && sum(prev, r => r.cost)) || 'API list price equivalent';
+  const days = { today: 1, 7: 7, 30: 30 }[state.range];
+  const plan = days && Object.entries(d.plans || {}).filter(([k]) => state.tool === 'all' || k === state.tool).reduce((a, [, v]) => a + v, 0) * days / 30;
+  $('kCostSub').innerHTML = plan && cost ? `<b>${(cost / plan).toFixed(1)}×</b> your $${Math.round(plan)} subscription for this period` : delta(cost, prev && sum(prev, r => r.cost)) || 'at API list prices';
   $('kPrompts').textContent = prompts.length.toLocaleString();
   $('kPromptsSub').innerHTML = prompts.length ? `<b>${fmt(tokens / prompts.length)}</b> tokens per prompt` : '';
   $('kCache').textContent = pct(cacheIn / (cacheIn + freshIn));
@@ -213,12 +225,13 @@ function render() {
   $('kTurnsSub').innerHTML = `<b>${recs.filter(r => r.sub).length}</b> in subagents`;
   const unknownModels = [...new Set(unpriced.map(r => r.model))];
   $('unpriced').classList.toggle('hide', !unknownModels.length);
-  $('unpriced').innerHTML = `No pricing for <b>${unknownModels.map(esc).join(', ')}</b>. Add them to <code>pricing.json</code> next to server.py to include them in cost.`;
+  $('unpriced').innerHTML = `${unpriced.length} turns excluded from cost: no pricing for <b>${unknownModels.map(esc).join(', ')}</b>. Add them to <code>pricing.json</code> next to server.py.`;
   renderChart(recs, prompts, b);
   renderMix(recs);
   renderGroup('byModel', recs, r => r.model, 'Model', tokens, cost);
   renderGroup('byProject', recs, r => short(r.project), 'Project', tokens, cost);
   renderGroup('bySession', recs, r => (r.session || '').slice(0, 8) + ' · ' + short(r.project), 'Session', tokens, cost, 15);
+  renderPrompts(recs, prompts);
   renderFeed(recs);
   $('csv').href = '/api/export.csv' + (b[0] ? '?since=' + b[0].toISOString() : '');
 }
@@ -298,6 +311,32 @@ function renderGroup(id, recs, keyFn, label, tokAll, costAll, limit = 50) {
     `<tr><td class="trunc" title="${esc(g.k)}">${g.tool !== 'mixed' ? `<span class="tool" style="background:var(--${g.tool})"></span>` : ''}${esc(g.k)}</td><td class="n">${g.turns}</td><td class="n">${fmt(g.tokens)}<span class="bar" style="width:${Math.round(g.tokens / max * 48)}px"></span></td><td class="n">${g.priced ? usd(g.cost) : '<span class="muted">unpriced</span>'}</td><td class="n">${pct(g.tokens / Math.max(1, tokAll))}</td></tr>`).join('') : '<tr><td class="empty">No data in this range</td></tr>';
 }
 
+function renderPrompts(recs, prompts) {
+  const bySession = new Map();
+  for (const p of prompts) { if (!bySession.has(p.session)) bySession.set(p.session, []); bySession.get(p.session).push({ p, turns: 0, tokens: 0, cost: 0, priced: true, last: p.ts }); }
+  for (const r of recs) {
+    const list = bySession.get(r.session); if (!list) continue;
+    let g = null; for (const x of list) { if (x.p.ts <= r.ts) g = x; else break; }
+    if (!g) continue;
+    g.turns++; g.tokens += total(r); g.cost += r.cost || 0; if (r.cost == null) g.priced = false; if (r.ts > g.last) g.last = r.ts;
+  }
+  const rows = [...bySession.values()].flat().sort((a, b) => b.p.ts.localeCompare(a.p.ts)).slice(0, 100);
+  $('promptCount').textContent = rows.length ? `· latest ${rows.length} of ${prompts.length.toLocaleString()}` : '';
+  const cmd = p => p.tool === 'claude' ? `claude --resume ${p.session}` : `codex resume ${p.session}`;
+  const dur = g => { const ms = new Date(g.last) - new Date(g.p.ts); return ms < 1000 ? '' : ms < 60000 ? Math.round(ms / 1000) + 's' : Math.round(ms / 60000) + 'm'; };
+  $('prompts').innerHTML = rows.length ? `<tr><th>Time</th><th>Tool</th><th>Project</th><th>Prompt</th><th class="n">Turns</th><th class="n">Tokens</th><th class="n">Cost</th><th class="n">Took</th></tr>` + rows.map((g, i) => {
+    const text = g.p.text || '';
+    const preview = text ? esc(text.replace(/\s+/g, ' ').slice(0, 110)) + (text.length > 110 ? '…' : '') : '<span class="muted">context-only turn, no prompt text</span>';
+    return `<tr class="prow" data-i="${i}"><td class="mono">${new Date(g.p.ts).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</td><td><span class="tool" style="background:var(--${g.p.tool})"></span>${TOOL_NAME[g.p.tool]}</td><td class="trunc" style="max-width:120px" title="${esc(g.p.project)}">${esc(short(g.p.project))}</td><td class="ptext">${preview}</td><td class="n">${g.turns}</td><td class="n">${fmt(g.tokens)}</td><td class="n">${g.priced ? usd(g.cost) : '<span class="muted">–</span>'}</td><td class="n muted">${dur(g)}</td></tr>` +
+      `<tr class="pfull ${state.open.has(g.p.id) ? '' : 'hide'}" data-i="${i}"><td colspan="8"><div class="full">${esc(text) || '<span class="muted">No plain-text prompt was recorded for this turn.</span>'}</div><div class="muted" style="margin-top:8px">Resume this session: <code>${cmd(g.p)}</code> · prompt id <code>${esc(g.p.id || '')}</code></div></td></tr>`;
+  }).join('') : '<tr><td class="empty">No prompts in this range</td></tr>';
+  $('prompts').querySelectorAll('tr.prow').forEach(tr => tr.onclick = () => {
+    const id = rows[+tr.dataset.i].p.id;
+    state.open.has(id) ? state.open.delete(id) : state.open.add(id);
+    $('prompts').querySelector(`tr.pfull[data-i="${tr.dataset.i}"]`).classList.toggle('hide', !state.open.has(id));
+  });
+}
+
 function renderFeed(recs) {
   const rows = recs.slice(-60).reverse();
   $('feedCount').textContent = rows.length ? `· latest ${rows.length} of ${recs.length.toLocaleString()} turns` : '';
@@ -328,22 +367,34 @@ async function load() {
     setLive(true);
   } catch (e) { setLive(false); }
 }
+function readHash() {
+  const h = new URLSearchParams(location.hash.slice(1));
+  for (const k of ['range', 'tool', 'metric', 'project', 'model']) if (h.get(k)) state[k] = h.get(k);
+  for (const id of ['range', 'tool', 'metric']) $(id).querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.v === state[id]));
+  if (h.get('theme')) applyTheme(h.get('theme'));
+  if (h.get('view')) setTimeout(() => $(h.get('view'))?.scrollIntoView(), 300);
+}
+function writeHash() {
+  const h = new URLSearchParams();
+  for (const k of ['range', 'tool', 'metric', 'project', 'model']) if (state[k] && state[k] !== { range: '30', tool: 'all', metric: 'tokens' }[k]) h.set(k, state[k]);
+  history.replaceState(null, '', h.toString() ? '#' + h : location.pathname);
+}
 function setLive(ok) { $('live').classList.toggle('stale', !ok); $('liveText').textContent = ok ? 'live' : 'server unreachable'; }
 
 for (const id of ['range', 'tool', 'metric']) $(id).addEventListener('click', e => {
   const btn = e.target.closest('button'); if (!btn) return;
   $(id).querySelectorAll('button').forEach(b => b.classList.toggle('on', b === btn));
-  state[id] = btn.dataset.v; render();
+  state[id] = btn.dataset.v; writeHash(); render();
 });
-$('project').onchange = e => { state.project = e.target.value; render(); };
-$('model').onchange = e => { state.model = e.target.value; render(); };
+$('project').onchange = e => { state.project = e.target.value; writeHash(); render(); };
+$('model').onchange = e => { state.model = e.target.value; writeHash(); render(); };
 $('tableToggle').onclick = () => { state.table = !state.table; $('chartWrap').classList.toggle('hide', state.table); $('chartTable').classList.toggle('hide', !state.table); $('tableToggle').textContent = state.table ? 'Chart' : 'Table'; };
 const applyTheme = t => { document.documentElement.dataset.theme = t; try { localStorage.setItem('tm-theme', t); } catch (e) {} };
 $('theme').onclick = () => applyTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark');
 let saved = null; try { saved = localStorage.getItem('tm-theme'); } catch (e) {}
 applyTheme(saved || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
 addEventListener('resize', () => state.data && render());
-load(); setInterval(load, 4000);
+readHash(); load(); setInterval(load, 4000);
 </script>
 </body>
 </html>

@@ -1,5 +1,7 @@
 # Tokenmeter
 
+![Tokenmeter demo](docs/demo.gif)
+
 A local dashboard that shows token usage and estimated cost for every prompt you send in **Claude Code** and **Codex**. Zero dependencies: one Python file, one HTML file, nothing leaves your machine.
 
 ## What you get
@@ -14,9 +16,16 @@ A local dashboard that shows token usage and estimated cost for every prompt you
 
 ## How it works
 
-Claude Code writes a JSONL transcript per session under `~/.claude/projects`, and Codex writes rollouts under `~/.codex/sessions`. Both include per-turn `usage` blocks. Tokenmeter tails those files, dedupes streamed message chunks, normalizes both formats into one record shape, prices them with `pricing.json`, and serves the result at `http://127.0.0.1:7788`. No hooks, no wrappers, no telemetry.
+Nothing is installed inside Claude Code or Codex. Both tools already save every conversation to a log file on your disk, and each model reply in that log includes how many tokens it used. Tokenmeter just reads those logs.
 
-Files are re-read only when their size or mtime changes, so the first index takes about a second and every refresh after that is instant.
+1. Claude Code saves logs in `~/.claude/projects/`. Codex saves them in `~/.codex/sessions/`.
+2. `server.py` reads every log once, pulls out each prompt and each model reply with its token counts, and keeps them in memory.
+3. It multiplies tokens by the prices in `pricing.json` to estimate cost.
+4. It serves a web page at `http://127.0.0.1:7788`. The page asks the server every 4 seconds if anything changed and redraws when it has.
+
+When you send a new prompt, the tool appends to its log, Tokenmeter notices the file grew, re-reads that one file, and the new turn shows up. Only your machine is involved. Nothing is sent anywhere.
+
+The `/tokenmeter` skill is just a shortcut that starts `server.py` and gives you the link.
 
 ## Install
 

@@ -18,9 +18,12 @@ HOME = os.path.expanduser("~")
 CLAUDE_DIR = os.environ.get("CLAUDE_CONFIG_DIR", os.path.join(HOME, ".claude"))
 CODEX_DIR = os.environ.get("CODEX_HOME", os.path.join(HOME, ".codex"))
 PORT = int(os.environ.get("TOKENMETER_PORT", "7788"))
+TEXT_CAP = 600
 
 with open(os.path.join(HERE, "pricing.json")) as f:
-    PRICING = {k: v for k, v in json.load(f).items() if not k.startswith("_")}
+    _pricing_file = json.load(f)
+PRICING = {k: v for k, v in _pricing_file.items() if not k.startswith("_")}
+PLANS = {k: v for k, v in _pricing_file.get("_plans", {}).items() if not k.startswith("_")}
 
 
 def price_for(model):
@@ -40,6 +43,14 @@ def cost_of(rec):
     return round(usd / 1e6, 6)
 
 
+def prompt_text(content):
+    if isinstance(content, str):
+        return content[:TEXT_CAP]
+    if isinstance(content, list) and not any(b.get("type") == "tool_result" for b in content if isinstance(b, dict)):
+        return "\n".join(b.get("text", "") for b in content if isinstance(b, dict) and b.get("type") == "text")[:TEXT_CAP]
+    return None
+
+
 def parse_claude(path):
     project = os.path.basename(os.path.dirname(path))
     by_msg = {}
@@ -53,8 +64,10 @@ def parse_claude(path):
             except ValueError:
                 continue
             msg = d.get("message") or {}
-            if d.get("type") == "user" and d.get("promptId") and isinstance(msg.get("content"), str):
-                prompts[d["promptId"]] = {"ts": d.get("timestamp"), "tool": "claude", "session": d.get("sessionId"), "project": d.get("cwd") or project}
+            if d.get("type") == "user" and d.get("promptId") and d["promptId"] not in prompts:
+                text = prompt_text(msg.get("content"))
+                if text is not None:
+                    prompts[d["promptId"]] = {"ts": d.get("timestamp"), "tool": "claude", "session": d.get("sessionId"), "project": d.get("cwd") or project, "id": d["promptId"], "text": text}
                 continue
             u = msg.get("usage")
             if d.get("type") != "assistant" or not u or msg.get("model", "").startswith("<"):
@@ -86,7 +99,7 @@ def parse_codex(path):
     model, cwd, session = "unknown", None, None
     with open(path, "rb") as f:
         for raw in f:
-            if b"token_usage_record" not in raw and b"token_count" not in raw and b"turn_context" not in raw and b"session_meta" not in raw:
+            if b"token_usage_record" not in raw and b"token_count" not in raw and b"turn_context" not in raw and b"session_meta" not in raw and b"input_text" not in raw:
                 continue
             try:
                 d = json.loads(raw)
@@ -99,7 +112,12 @@ def parse_codex(path):
                 model = p.get("model") or model
             elif t == "turn_context":
                 model = p.get("model") or model
-                prompts.append({"ts": d.get("timestamp"), "tool": "codex", "session": session, "project": cwd})
+                prompts.append({"ts": d.get("timestamp"), "tool": "codex", "session": session, "project": cwd, "id": p.get("turn_id"), "text": ""})
+            elif t == "response_item" and p.get("role") == "user" and prompts and not prompts[-1]["text"]:
+                texts = [b.get("text", "") for b in p.get("content", []) if isinstance(b, dict) and b.get("type") == "input_text"]
+                texts = [x.strip() for x in texts if x.strip() and not x.lstrip().startswith("<")]
+                if texts:
+                    prompts[-1]["text"] = texts[0][:TEXT_CAP]
             elif t == "token_usage_record" and p.get("usage"):
                 new.append(codex_rec(d, p["usage"], model, cwd, session))
             elif t == "event_msg" and p.get("type") == "token_count" and (p.get("info") or {}).get("last_token_usage"):
@@ -166,8 +184,8 @@ class Store:
     def snapshot(self):
         self.scan()
         with self.lock:
-            recs = [r for _, rs, _ in self.files.values() for r in rs]
-            prompts = [p for _, _, ps in self.files.values() for p in ps]
+            recs = list({(r["ts"], r["session"], r["out"], r["cr"]): r for _, rs, _ in self.files.values() for r in rs}.values())
+            prompts = list({p["id"]: p for _, _, ps in self.files.values() for p in ps}.values())
         recs.sort(key=lambda r: r["ts"] or "")
         prompts.sort(key=lambda p: p["ts"] or "")
         return {
@@ -176,6 +194,7 @@ class Store:
             "records": recs,
             "prompts": prompts,
             "priced_models": sorted(PRICING),
+            "plans": PLANS,
             "sources": {"claude": CLAUDE_DIR, "codex": CODEX_DIR},
         }
 
