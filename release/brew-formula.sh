@@ -4,8 +4,8 @@
 set -e
 V="${1:-$(curl -s https://pypi.org/pypi/tokenmeter-dashboard/json | python3 -c 'import sys,json; print(json.load(sys.stdin)["info"]["version"])')}"
 JSON=$(curl -s "https://pypi.org/pypi/tokenmeter-dashboard/$V/json")
-URL=$(echo "$JSON" | python3 -c 'import sys,json; print([u for u in json.load(sys.stdin)["urls"] if u["packagetype"]=="sdist"][0]["url"])')
-SHA=$(echo "$JSON" | python3 -c 'import sys,json; print([u for u in json.load(sys.stdin)["urls"] if u["packagetype"]=="sdist"][0]["digests"]["sha256"])')
+URL=$(printf "%s" "$JSON" | python3 -c 'import sys,json; print([u for u in json.load(sys.stdin)["urls"] if u["packagetype"]=="sdist"][0]["url"])')
+SHA=$(printf "%s" "$JSON" | python3 -c 'import sys,json; print([u for u in json.load(sys.stdin)["urls"] if u["packagetype"]=="sdist"][0]["digests"]["sha256"])')
 cat <<RUBY
 class Tokenmeter < Formula
   include Language::Python::Virtualenv
