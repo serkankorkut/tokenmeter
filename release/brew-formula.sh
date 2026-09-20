@@ -10,7 +10,7 @@ cat <<RUBY
 class Tokenmeter < Formula
   include Language::Python::Virtualenv
 
-  desc "Local token usage, cost and limits dashboard for Claude Code, Codex and Copilot CLI"
+  desc "Token usage, cost and limits dashboard for Claude Code, Codex and Copilot CLI"
   homepage "https://github.com/serkankorkut/tokenmeter"
   url "$URL"
   sha256 "$SHA"
