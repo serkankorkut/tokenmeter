@@ -1,6 +1,6 @@
 # Tokenmeter
 
-![Tokenmeter demo](https://raw.githubusercontent.com/serkankorkut/tokenmeter/main/docs/demo.gif)
+![Tokenmeter demo](docs/demo.gif)
 
 A local dashboard that shows token usage and estimated cost for every prompt you send in **Claude Code** and **Codex**. Zero dependencies: one Python file, one HTML file, nothing leaves your machine.
 
