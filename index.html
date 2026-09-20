@@ -144,6 +144,8 @@ footer { margin-top: 20px; color: var(--text-3); font-size: 12px; display: flex;
   <div class="card kpi"><div class="label">Model turns</div><div class="value" id="kTurns">–</div><div class="sub" id="kTurnsSub"></div></div>
 </div>
 
+<div class="card" id="expensiveCard" style="margin-bottom:14px"><h2>Most expensive prompts <span class="hint">click a row for the full text</span></h2><div class="scroll"><table id="expensive"></table></div></div>
+
 <div class="card" id="promptsCard" style="margin-bottom:14px">
   <h2>Prompts <span class="muted" id="promptCount"></span><span class="hint">Click a row for the full text and a resume command · click a header to sort</span></h2>
   <div class="scroll" style="max-height:520px"><table id="prompts"></table></div>
@@ -180,15 +182,13 @@ footer { margin-top: 20px; color: var(--text-3); font-size: 12px; display: flex;
 
 <div class="grid two">
   <div class="card"><h2>Cache misses <span class="hint" id="missHint"></span></h2><div class="scroll"><table id="misses"></table></div></div>
-  <div class="card"><h2>Most expensive prompts</h2><div class="scroll"><table id="expensive"></table></div></div>
+  <div class="card"><h2>Cost per commit <span class="hint">turns between one commit and the next, per repo</span></h2><div class="scroll"><table id="commits"></table></div></div>
 </div>
 
 <div class="grid two">
-  <div class="card"><h2>Cost per commit <span class="hint">turns between one commit and the next, per repo</span></h2><div class="scroll"><table id="commits"></table></div></div>
   <div class="card"><h2>By project</h2><div class="scroll"><table id="byProject"></table></div></div>
+  <div class="card"><h2>Top sessions</h2><div class="scroll"><table id="bySession"></table></div></div>
 </div>
-
-<div class="card" style="margin-bottom:14px"><h2>Top sessions</h2><div class="scroll"><table id="bySession"></table></div></div>
 
 <div class="card">
   <h2>Live feed <span class="muted" id="feedCount"></span></h2>
