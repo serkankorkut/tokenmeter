@@ -9,13 +9,13 @@ Tokenmeter reads the transcripts Claude Code, Codex and Copilot CLI already writ
 
 ## Start the dashboard
 
-Run the server in the background (it is safe to run repeatedly, a second start just reports the existing URL):
+Run the server in the background (it is safe to run repeatedly, a second start just reports the existing URL). Try these in order and use the first that exists:
 
 ```bash
-nohup python3 ~/.claude/skills/tokenmeter/server.py --open >/dev/null 2>&1 &
+(command -v tokenmeter && nohup tokenmeter --open >/dev/null 2>&1 &) || (nohup python3 ~/.claude/skills/tokenmeter/tokenmeter/server.py --open >/dev/null 2>&1 &) || (nohup python3 ~/.codex/skills/tokenmeter/tokenmeter/server.py --open >/dev/null 2>&1 &)
 ```
 
-If that path does not exist, use `~/.codex/skills/tokenmeter/server.py` instead. Both point at the same install.
+The `tokenmeter` command exists when installed with pip, pipx, uv or Homebrew. The two paths are the plugin checkouts for Claude Code and Codex.
 
 Then tell the user the dashboard is at http://127.0.0.1:7788 and stop. Do not paste usage numbers into chat unless asked; the dashboard is the deliverable.
 
@@ -26,6 +26,6 @@ If the user asks a specific question ("how much did I spend today", "which proje
 ## Configuration
 
 - `TOKENMETER_PORT` or `--port N` changes the port.
-- `pricing.json` next to `server.py` holds USD per million tokens by model-id prefix, plus `_plans` (what the user pays), `_budget` (alert caps) and `_context_windows`.
+- `pricing.json` inside the `tokenmeter` package holds USD per million tokens by model-id prefix, plus `_plans` (what the user pays), `_budget` (alert caps) and `_context_windows`.
 - `--export URL` pushes aggregates to a team server; `--host 0.0.0.0` runs one.
 - `CLAUDE_CONFIG_DIR` and `CODEX_HOME` override the transcript locations.

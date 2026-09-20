@@ -5,7 +5,7 @@ import tempfile
 
 sys.argv = ["test"]
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import server
+from tokenmeter import server
 
 CLAUDE_LINES = [
     {"type": "user", "promptId": "p1", "timestamp": "2026-09-20T10:00:00Z", "sessionId": "s1", "cwd": "/w", "message": {"role": "user", "content": "hi"}},

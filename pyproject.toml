@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tokenmeter-dashboard"
+version = "0.2.0"
+description = "Local token usage, cost and limits dashboard for Claude Code, Codex and GitHub Copilot CLI"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.9"
+authors = [{name = "Serkan Korkut"}]
+keywords = ["claude-code", "codex", "copilot", "tokens", "cost", "dashboard", "llm"]
+classifiers = [
+  "Environment :: Web Environment",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Topic :: Software Development",
+  "Topic :: System :: Monitoring"
+]
+
+[project.urls]
+Homepage = "https://github.com/serkankorkut/tokenmeter"
+Source = "https://github.com/serkankorkut/tokenmeter"
+
+[project.scripts]
+tokenmeter = "tokenmeter.server:main"
+
+[tool.setuptools]
+packages = ["tokenmeter"]
+
+[tool.setuptools.package-data]
+tokenmeter = ["index.html", "pricing.json"]

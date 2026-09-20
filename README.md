@@ -1,6 +1,6 @@
 # Tokenmeter
 
-![Tokenmeter demo](docs/demo.gif)
+![Tokenmeter demo](https://raw.githubusercontent.com/serkankorkut/tokenmeter/main/docs/demo.gif)
 
 A local dashboard that shows token usage and estimated cost for every prompt you send in **Claude Code** and **Codex**. Zero dependencies: one Python file, one HTML file, nothing leaves your machine.
 
@@ -33,21 +33,35 @@ The `/tokenmeter` skill is just a shortcut that starts `server.py` and gives you
 
 ## Install
 
-Any machine with Python 3 and access to this repo. Option A, as a Claude Code plugin straight from GitHub:
+Any machine with Python 3.9 or newer. Pick one:
+
+```bash
+brew install serkankorkut/tap/tokenmeter
+```
+
+```bash
+pipx install tokenmeter-dashboard
+```
+
+```bash
+uvx tokenmeter-dashboard
+```
+
+Or, as a Claude Code plugin straight from GitHub:
 
 ```bash
 claude plugin marketplace add serkankorkut/tokenmeter
 claude plugin install tokenmeter@tokenmeter
 ```
 
-Option B, clone and link (also installs the Codex skill and the `tokenmeter` command):
+Or clone and link, which also installs the Codex skill and the `tokenmeter` command:
 
 ```bash
 git clone https://github.com/serkankorkut/tokenmeter ~/repo/tokenmeter
 ~/repo/tokenmeter/install.sh
 ```
 
-The installer symlinks the plugin into `~/.claude/skills/tokenmeter` (auto-loads in Claude Code as `tokenmeter@skills-dir`) and `~/.codex/skills/tokenmeter` (Codex skill), and puts a `tokenmeter` command in `~/.local/bin`.
+With Homebrew you can keep it running in the background: `brew services start tokenmeter`.
 
 Then in either tool:
 
@@ -117,8 +131,10 @@ Copy `menubar/tokenmeter.1m.sh` into your SwiftBar or xbar plugin folder. It sho
 
 ```bash
 python3 test_server.py
-python3 server.py --open
+python3 -m tokenmeter --open
 ```
+
+Release: bump the version in `pyproject.toml` and `tokenmeter/__init__.py`, tag `vX.Y.Z` and push. The GitHub Action publishes to PyPI via trusted publishing. Then regenerate the Homebrew formula with `release/brew-formula.sh > ../homebrew-tap/Formula/tokenmeter.rb`.
 
 ## Roadmap
 

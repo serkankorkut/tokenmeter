@@ -18,6 +18,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 from urllib.request import Request, urlopen
 
+__version__ = "0.2.0"
 HERE = os.path.dirname(os.path.abspath(__file__))
 HOME = os.path.expanduser("~")
 CLAUDE_DIR = os.environ.get("CLAUDE_CONFIG_DIR", os.path.join(HOME, ".claude"))
@@ -446,6 +447,12 @@ def arg(name, default=None):
 
 def main():
     global USER
+    if "--version" in sys.argv:
+        print(f"tokenmeter {__version__}")
+        return
+    if "--help" in sys.argv or "-h" in sys.argv:
+        print("usage: tokenmeter [--open] [--port N] [--host ADDR] [--user NAME] [--export URL] [--version]\n\nServes the Tokenmeter dashboard at http://127.0.0.1:7788 by default.")
+        return
     port = int(arg("--port", PORT))
     host = arg("--host", "127.0.0.1")
     USER = arg("--user", USER)
