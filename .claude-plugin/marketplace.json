@@ -1,0 +1,17 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "tokenmeter",
+  "description": "Local token usage, cost and limits dashboard for Claude Code, Codex and Copilot CLI.",
+  "owner": {
+    "name": "Serkan Korkut",
+    "url": "https://github.com/serkankorkut"
+  },
+  "plugins": [
+    {
+      "name": "tokenmeter",
+      "description": "Live token usage and cost dashboard for Claude Code, Codex and Copilot CLI.",
+      "source": "./",
+      "category": "productivity"
+    }
+  ]
+}

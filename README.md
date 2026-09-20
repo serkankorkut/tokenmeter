@@ -33,6 +33,15 @@ The `/tokenmeter` skill is just a shortcut that starts `server.py` and gives you
 
 ## Install
 
+Any machine with Python 3 and access to this repo. Option A, as a Claude Code plugin straight from GitHub:
+
+```bash
+claude plugin marketplace add serkankorkut/tokenmeter
+claude plugin install tokenmeter@tokenmeter
+```
+
+Option B, clone and link (also installs the Codex skill and the `tokenmeter` command):
+
 ```bash
 git clone https://github.com/serkankorkut/tokenmeter ~/repo/tokenmeter
 ~/repo/tokenmeter/install.sh
