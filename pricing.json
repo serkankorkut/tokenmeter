@@ -1,0 +1,10 @@
+{
+  "_comment": "USD per 1M tokens. Keys are model-id prefixes, longest match wins. Edit freely; unknown models show as unpriced in the dashboard.",
+  "claude-fable-5-1": {"input": 10, "cache_read": 0.25, "cache_write_5m": 12.5, "cache_write_1h": 20, "output": 50},
+  "claude-fable-5": {"input": 10, "cache_read": 1, "cache_write_5m": 12.5, "cache_write_1h": 20, "output": 50},
+  "claude-opus-5": {"input": 5, "cache_read": 0.5, "cache_write_5m": 6.25, "cache_write_1h": 10, "output": 25},
+  "claude-opus-4": {"input": 5, "cache_read": 0.5, "cache_write_5m": 6.25, "cache_write_1h": 10, "output": 25},
+  "claude-sonnet-5": {"input": 2, "cache_read": 0.2, "cache_write_5m": 2.5, "cache_write_1h": 4, "output": 10},
+  "claude-sonnet-4": {"input": 3, "cache_read": 0.3, "cache_write_5m": 3.75, "cache_write_1h": 6, "output": 15},
+  "claude-haiku-4": {"input": 1, "cache_read": 0.1, "cache_write_5m": 1.25, "cache_write_1h": 2, "output": 5}
+}

@@ -1,0 +1,349 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tokenmeter</title>
+<style>
+:root {
+  color-scheme: light;
+  --bg: #f4f4f2; --surface: #fcfcfb; --line: #e3e2dd; --line-soft: #efeeea;
+  --text: #0b0b0b; --text-2: #52514e; --text-3: #8a8983;
+  --claude: #2a78d6; --codex: #eb6834;
+  --mix-1: #d9d4f5; --mix-2: #a89ee6; --mix-3: #7466cc; --mix-4: #4a3aa7;
+  --good: #008300; --warn: #c98500;
+  --shadow: 0 1px 2px rgba(0,0,0,.04), 0 4px 16px rgba(0,0,0,.04);
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #111110; --surface: #1a1a19; --line: #2c2c2a; --line-soft: #232321;
+  --text: #ffffff; --text-2: #c3c2b7; --text-3: #85847c;
+  --claude: #3987e5; --codex: #d95926;
+  --mix-1: #4a4470; --mix-2: #6b62a8; --mix-3: #9085e9; --mix-4: #c3bcf5;
+  --good: #3fb950; --warn: #d9a441;
+  --shadow: none;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif; -webkit-font-smoothing: antialiased; }
+.wrap { max-width: 1280px; margin: 0 auto; padding: 20px 16px 48px; }
+header { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 18px; }
+.brand { display: flex; align-items: center; gap: 10px; margin-right: auto; }
+.brand h1 { font-size: 18px; margin: 0; letter-spacing: -.01em; }
+.brand svg { width: 26px; height: 26px; }
+.live { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-2); }
+.live i { width: 8px; height: 8px; border-radius: 50%; background: var(--good); box-shadow: 0 0 0 0 var(--good); animation: pulse 2s infinite; }
+.live.stale i { background: var(--warn); animation: none; }
+@keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(0,131,0,.5); } 70% { box-shadow: 0 0 0 7px rgba(0,131,0,0); } 100% { box-shadow: 0 0 0 0 rgba(0,131,0,0); } }
+.controls { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--surface); }
+.seg button { border: 0; background: transparent; color: var(--text-2); padding: 6px 11px; cursor: pointer; font: inherit; font-size: 13px; }
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button.on { background: var(--text); color: var(--bg); }
+a.btn { text-decoration: none; display: inline-block; }
+select, .btn { border: 1px solid var(--line); background: var(--surface); color: var(--text); border-radius: 8px; padding: 6px 10px; font: inherit; font-size: 13px; max-width: 220px; cursor: pointer; }
+.btn:hover, select:hover { border-color: var(--text-3); }
+.grid { display: grid; gap: 14px; }
+.kpis { grid-template-columns: repeat(6, 1fr); margin-bottom: 14px; }
+@media (max-width: 1100px) { .kpis { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 560px) { .kpis { grid-template-columns: repeat(2, 1fr); } }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; box-shadow: var(--shadow); min-width: 0; }
+.kpi .label { font-size: 12px; color: var(--text-2); margin-bottom: 6px; }
+.kpi .value { font-size: 26px; font-weight: 600; letter-spacing: -.02em; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.kpi .sub { font-size: 12px; color: var(--text-3); margin-top: 6px; font-variant-numeric: tabular-nums; }
+.kpi .sub b { color: var(--text-2); font-weight: 500; }
+.two { grid-template-columns: 1fr 1fr; margin-bottom: 14px; }
+@media (max-width: 860px) { .two { grid-template-columns: 1fr; } }
+.card h2 { font-size: 14px; margin: 0 0 12px; font-weight: 600; display: flex; align-items: center; gap: 10px; }
+.card h2 .legend { margin-left: auto; display: flex; gap: 14px; font-weight: 400; font-size: 12px; color: var(--text-2); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+.sw-claude { background: var(--claude); } .sw-codex { background: var(--codex); }
+.chart-wrap { position: relative; }
+svg.chart { width: 100%; height: 260px; display: block; overflow: visible; }
+svg.chart text { fill: var(--text-3); font-size: 11px; font-variant-numeric: tabular-nums; }
+svg.chart .grid line { stroke: var(--line-soft); }
+svg.chart .axis line { stroke: var(--line); }
+svg.chart rect.bar { transition: opacity .15s; }
+svg.chart g.col:hover rect.bar { opacity: .85; }
+svg.chart rect.hit { fill: transparent; }
+.tip { position: absolute; pointer-events: none; background: var(--text); color: var(--bg); padding: 8px 10px; border-radius: 8px; font-size: 12px; white-space: nowrap; transform: translate(-50%, calc(-100% - 10px)); opacity: 0; transition: opacity .1s; z-index: 5; font-variant-numeric: tabular-nums; }
+.tip b { font-weight: 600; }
+.tip .row { display: flex; gap: 10px; justify-content: space-between; }
+.tip i { width: 8px; height: 8px; border-radius: 2px; display: inline-block; margin-right: 6px; }
+.mix { display: flex; height: 22px; border-radius: 6px; overflow: hidden; gap: 2px; background: var(--line-soft); margin: 4px 0 14px; }
+.mix div { min-width: 2px; transition: width .3s; }
+.mixlist { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; }
+.mixlist div { font-size: 12px; color: var(--text-2); }
+.mixlist b { display: block; color: var(--text); font-size: 16px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.mixlist i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; margin-right: 6px; vertical-align: -1px; }
+table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; font-size: 13px; }
+th, td { text-align: left; padding: 8px 8px; border-bottom: 1px solid var(--line-soft); white-space: nowrap; }
+th { font-weight: 500; color: var(--text-2); font-size: 12px; }
+td.n, th.n { text-align: right; }
+td.mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
+td .tool { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 7px; vertical-align: 1px; }
+td .bar { display: inline-block; height: 6px; border-radius: 3px; background: var(--text); opacity: .18; vertical-align: middle; margin-left: 8px; }
+tr.new td { animation: flash 1.6s ease-out; }
+@keyframes flash { from { background: color-mix(in srgb, var(--claude) 18%, transparent); } to { background: transparent; } }
+.trunc { max-width: 260px; overflow: hidden; text-overflow: ellipsis; }
+.scroll { overflow: auto; max-height: 420px; }
+.muted { color: var(--text-3); font-size: 12px; }
+footer { margin-top: 20px; color: var(--text-3); font-size: 12px; display: flex; gap: 16px; flex-wrap: wrap; }
+footer code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.empty { padding: 30px; text-align: center; color: var(--text-3); }
+.hide { display: none !important; }
+.notice { background: var(--surface); border: 1px dashed var(--line); border-radius: 10px; padding: 10px 14px; font-size: 12px; color: var(--text-2); margin-bottom: 14px; }
+.notice code { font-family: ui-monospace, Menlo, monospace; }
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div class="brand">
+    <svg viewBox="0 0 26 26" fill="none" aria-hidden="true"><rect x="1" y="1" width="24" height="24" rx="7" fill="var(--text)"/><rect x="6" y="14" width="3" height="6" rx="1" fill="var(--bg)"/><rect x="11.5" y="9" width="3" height="11" rx="1" fill="var(--bg)"/><rect x="17" y="5" width="3" height="15" rx="1" fill="var(--bg)"/></svg>
+    <h1>Tokenmeter</h1>
+    <span class="live" id="live"><i></i><span id="liveText">live</span></span>
+  </div>
+  <div class="controls">
+    <div class="seg" id="range"><button data-v="today">Today</button><button data-v="7">7d</button><button data-v="30" class="on">30d</button><button data-v="all">All</button></div>
+    <div class="seg" id="tool"><button data-v="all" class="on">All</button><button data-v="claude">Claude Code</button><button data-v="codex">Codex</button></div>
+    <select id="project"><option value="">All projects</option></select>
+    <select id="model"><option value="">All models</option></select>
+    <button class="btn" id="theme" title="Toggle theme">◐</button>
+    <a class="btn" id="csv" href="/api/export.csv" download>Export CSV</a>
+  </div>
+</header>
+
+<div class="notice hide" id="unpriced"></div>
+
+<div class="grid kpis">
+  <div class="card kpi"><div class="label">Total tokens</div><div class="value" id="kTokens">–</div><div class="sub" id="kTokensSub"></div></div>
+  <div class="card kpi"><div class="label">Estimated cost</div><div class="value" id="kCost">–</div><div class="sub" id="kCostSub"></div></div>
+  <div class="card kpi"><div class="label">Prompts</div><div class="value" id="kPrompts">–</div><div class="sub" id="kPromptsSub"></div></div>
+  <div class="card kpi"><div class="label">Cache hit rate</div><div class="value" id="kCache">–</div><div class="sub" id="kCacheSub"></div></div>
+  <div class="card kpi"><div class="label">Output tokens</div><div class="value" id="kOut">–</div><div class="sub" id="kOutSub"></div></div>
+  <div class="card kpi"><div class="label">Model turns</div><div class="value" id="kTurns">–</div><div class="sub" id="kTurnsSub"></div></div>
+</div>
+
+<div class="card" style="margin-bottom:14px">
+  <h2>
+    <span id="chartTitle">Usage over time</span>
+    <div class="seg" id="metric" style="font-size:12px"><button data-v="tokens" class="on">Tokens</button><button data-v="cost">Cost</button><button data-v="prompts">Prompts</button></div>
+    <button class="btn" id="tableToggle" style="padding:3px 8px;font-size:12px">Table</button>
+    <div class="legend"><span><i class="sw-claude"></i>Claude Code</span><span><i class="sw-codex"></i>Codex</span></div>
+  </h2>
+  <div class="chart-wrap" id="chartWrap"><svg class="chart" id="chart"></svg><div class="tip" id="tip"></div></div>
+  <div class="scroll hide" id="chartTable"></div>
+</div>
+
+<div class="grid two">
+  <div class="card">
+    <h2>Token mix</h2>
+    <div class="mix" id="mix"></div>
+    <div class="mixlist" id="mixList"></div>
+    <p class="muted" style="margin:14px 0 0">Cache reads are billed at a fraction of fresh input. Thinking tokens are included in output.</p>
+  </div>
+  <div class="card">
+    <h2>By model</h2>
+    <div class="scroll"><table id="byModel"></table></div>
+  </div>
+</div>
+
+<div class="grid two">
+  <div class="card"><h2>By project</h2><div class="scroll"><table id="byProject"></table></div></div>
+  <div class="card"><h2>Top sessions</h2><div class="scroll"><table id="bySession"></table></div></div>
+</div>
+
+<div class="card">
+  <h2>Live feed <span class="muted" id="feedCount"></span></h2>
+  <div class="scroll"><table id="feed"></table></div>
+</div>
+
+<footer>
+  <span id="srcClaude"></span><span id="srcCodex"></span><span id="scanned"></span>
+</footer>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const state = { range: '30', tool: 'all', project: '', model: '', metric: 'tokens', table: false, data: null, version: null, seen: new Set() };
+const TOOL_NAME = { claude: 'Claude Code', codex: 'Codex' };
+const fmt = n => n >= 1e9 ? (n / 1e9).toFixed(2) + 'B' : n >= 1e6 ? (n / 1e6).toFixed(2) + 'M' : n >= 1e3 ? (n / 1e3).toFixed(1) + 'K' : String(Math.round(n));
+const usd = n => n == null ? '–' : n >= 100 ? '$' + Math.round(n).toLocaleString() : n >= 1 ? '$' + n.toFixed(2) : '$' + n.toFixed(3);
+const pct = n => isFinite(n) ? (n * 100).toFixed(n < 0.1 ? 1 : 0) + '%' : '–';
+const total = r => r.in + r.cr + r.cw5 + r.cw1h + r.out;
+const short = p => (p || 'unknown').replace(/^\/Users\/[^/]+/, '~').replace(/^-Users-[^-]+/, '~');
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+function bounds() {
+  const now = new Date();
+  if (state.range === 'all') return [null, now];
+  if (state.range === 'today') { const s = new Date(now); s.setHours(0, 0, 0, 0); return [s, now]; }
+  const s = new Date(now); s.setHours(0, 0, 0, 0); s.setDate(s.getDate() - (+state.range - 1)); return [s, now];
+}
+function inRange(ts, [s, e]) { const t = new Date(ts); return (!s || t >= s) && t <= e; }
+function passes(r, b) {
+  return inRange(r.ts, b) && (state.tool === 'all' || r.tool === state.tool) && (!state.project || r.project === state.project) && (!state.model || r.model === state.model);
+}
+function prevBounds([s, e]) { if (!s) return null; const len = e - s; return [new Date(s - len), s]; }
+
+function render() {
+  const d = state.data; if (!d) return;
+  const b = bounds();
+  const recs = d.records.filter(r => passes(r, b));
+  const prompts = d.prompts.filter(p => inRange(p.ts, b) && (state.tool === 'all' || p.tool === state.tool) && (!state.project || p.project === state.project));
+  const pb = prevBounds(b);
+  const prev = pb ? d.records.filter(r => passes(r, pb)) : null;
+  const sum = (arr, f) => arr.reduce((a, r) => a + (f(r) || 0), 0);
+  const tokens = sum(recs, total), cost = sum(recs, r => r.cost), out = sum(recs, r => r.out);
+  const cacheIn = sum(recs, r => r.cr), freshIn = sum(recs, r => r.in + r.cw5 + r.cw1h);
+  const unpriced = recs.filter(r => r.cost == null);
+  const delta = (cur, prevVal) => prev && prevVal > 0 ? `<b>${cur >= prevVal ? '+' : ''}${pct((cur - prevVal) / prevVal)}</b> vs previous period` : '';
+  $('kTokens').textContent = fmt(tokens);
+  $('kTokensSub').innerHTML = delta(tokens, prev && sum(prev, total)) || `${fmt(sum(recs.filter(r => r.tool === 'claude'), total))} Claude · ${fmt(sum(recs.filter(r => r.tool === 'codex'), total))} Codex`;
+  $('kCost').textContent = usd(cost);
+  $('kCostSub').innerHTML = unpriced.length ? `${unpriced.length} unpriced turns excluded` : delta(cost, prev && sum(prev, r => r.cost)) || 'API list price equivalent';
+  $('kPrompts').textContent = prompts.length.toLocaleString();
+  $('kPromptsSub').innerHTML = prompts.length ? `<b>${fmt(tokens / prompts.length)}</b> tokens per prompt` : '';
+  $('kCache').textContent = pct(cacheIn / (cacheIn + freshIn));
+  $('kCacheSub').innerHTML = `<b>${fmt(cacheIn)}</b> read from cache`;
+  $('kOut').textContent = fmt(out);
+  $('kOutSub').innerHTML = `<b>${fmt(sum(recs, r => r.reason))}</b> thinking`;
+  $('kTurns').textContent = recs.length.toLocaleString();
+  $('kTurnsSub').innerHTML = `<b>${recs.filter(r => r.sub).length}</b> in subagents`;
+  const unknownModels = [...new Set(unpriced.map(r => r.model))];
+  $('unpriced').classList.toggle('hide', !unknownModels.length);
+  $('unpriced').innerHTML = `No pricing for <b>${unknownModels.map(esc).join(', ')}</b>. Add them to <code>pricing.json</code> next to server.py to include them in cost.`;
+  renderChart(recs, prompts, b);
+  renderMix(recs);
+  renderGroup('byModel', recs, r => r.model, 'Model', tokens, cost);
+  renderGroup('byProject', recs, r => short(r.project), 'Project', tokens, cost);
+  renderGroup('bySession', recs, r => (r.session || '').slice(0, 8) + ' · ' + short(r.project), 'Session', tokens, cost, 15);
+  renderFeed(recs);
+  $('csv').href = '/api/export.csv' + (b[0] ? '?since=' + b[0].toISOString() : '');
+}
+
+function buckets([s, e]) {
+  const hourly = state.range === 'today';
+  const start = s ? new Date(s) : new Date(Math.min(...state.data.records.map(r => new Date(r.ts))));
+  if (!s) start.setHours(0, 0, 0, 0);
+  const keys = [];
+  for (let t = new Date(start); t <= e; hourly ? t.setHours(t.getHours() + 1) : t.setDate(t.getDate() + 1)) keys.push(new Date(t));
+  const keyOf = ts => { const t = new Date(ts); t.setMinutes(0, 0, 0); if (!hourly) t.setHours(0); return t.getTime(); };
+  return { keys, keyOf, hourly };
+}
+
+function renderChart(recs, prompts, b) {
+  const { keys, keyOf, hourly } = buckets(b);
+  const byKey = new Map(keys.map(k => [k.getTime(), { claude: 0, codex: 0 }]));
+  const src = state.metric === 'prompts' ? prompts : recs;
+  const val = state.metric === 'tokens' ? total : state.metric === 'cost' ? (r => r.cost || 0) : (() => 1);
+  for (const r of src) { const k = keyOf(r.ts); if (byKey.has(k)) byKey.get(k)[r.tool] += val(r); }
+  const rows = keys.map(k => ({ k, ...byKey.get(k.getTime()) }));
+  const max = Math.max(1e-9, ...rows.map(r => r.claude + r.codex));
+  const W = $('chartWrap').clientWidth || 800, H = 260, padL = 44, padR = 8, padT = 10, padB = 26;
+  const iw = W - padL - padR, ih = H - padT - padB;
+  const n = rows.length, gap = n > 60 ? 1 : 2, bw = Math.max(1, iw / n - gap);
+  const fmtV = v => state.metric === 'cost' ? usd(v) : fmt(v);
+  const y = v => padT + ih - (v / max) * ih;
+  const ticks = [0, .25, .5, .75, 1].map(f => f * max);
+  const lab = k => hourly ? k.getHours().toString().padStart(2, '0') + ':00' : (k.getDate() === 1 || n <= 14 || k.getTime() === keys[0].getTime() ? k.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : k.getDate());
+  const every = Math.ceil(n / Math.max(4, Math.floor(iw / 60)));
+  let svg = `<g class="grid">${ticks.map(t => `<line x1="${padL}" x2="${W - padR}" y1="${y(t)}" y2="${y(t)}"/><text x="${padL - 6}" y="${y(t) + 4}" text-anchor="end">${fmtV(t)}</text>`).join('')}</g>`;
+  svg += `<g class="axis"><line x1="${padL}" x2="${W - padR}" y1="${padT + ih}" y2="${padT + ih}"/></g>`;
+  rows.forEach((r, i) => {
+    const x = padL + i * (iw / n) + gap / 2;
+    const hc = (r.claude / max) * ih, hx = (r.codex / max) * ih;
+    const yC = padT + ih - hc, yX = yC - hx - (hc && hx ? 2 : 0);
+    svg += `<g class="col" data-i="${i}">`;
+    if (hc) svg += `<rect class="bar" x="${x}" y="${yC}" width="${bw}" height="${hc}" rx="${hx ? 0 : Math.min(4, bw / 2)}" fill="var(--claude)"/>`;
+    if (hx) svg += `<rect class="bar" x="${x}" y="${Math.max(padT, yX)}" width="${bw}" height="${hx}" rx="${Math.min(4, bw / 2)}" fill="var(--codex)"/>`;
+    svg += `<rect class="hit" x="${x - gap / 2}" y="${padT}" width="${bw + gap}" height="${ih}"/>`;
+    if (i % every === 0) svg += `<text x="${x + bw / 2}" y="${H - 8}" text-anchor="middle">${lab(r.k)}</text>`;
+    svg += '</g>';
+  });
+  const el = $('chart'); el.setAttribute('viewBox', `0 0 ${W} ${H}`); el.innerHTML = svg;
+  const tip = $('tip');
+  el.querySelectorAll('g.col').forEach(g => {
+    g.onmousemove = ev => {
+      const r = rows[+g.dataset.i];
+      const rect = $('chartWrap').getBoundingClientRect();
+      tip.style.left = (ev.clientX - rect.left) + 'px'; tip.style.top = (ev.clientY - rect.top) + 'px'; tip.style.opacity = 1;
+      const when = hourly ? r.k.toLocaleString(undefined, { hour: '2-digit', minute: '2-digit' }) : r.k.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+      tip.innerHTML = `<b>${when}</b><div class="row"><span><i style="background:var(--claude)"></i>Claude Code</span><b>${fmtV(r.claude)}</b></div><div class="row"><span><i style="background:var(--codex)"></i>Codex</span><b>${fmtV(r.codex)}</b></div><div class="row" style="margin-top:4px;opacity:.8"><span>Total</span><b>${fmtV(r.claude + r.codex)}</b></div>`;
+    };
+    g.onmouseleave = () => tip.style.opacity = 0;
+  });
+  $('chartTable').innerHTML = `<table><tr><th>${hourly ? 'Hour' : 'Day'}</th><th class="n">Claude Code</th><th class="n">Codex</th><th class="n">Total</th></tr>${rows.filter(r => r.claude || r.codex).map(r => `<tr><td>${hourly ? r.k.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }) : r.k.toLocaleDateString()}</td><td class="n">${fmtV(r.claude)}</td><td class="n">${fmtV(r.codex)}</td><td class="n">${fmtV(r.claude + r.codex)}</td></tr>`).join('')}</table>`;
+}
+
+function renderMix(recs) {
+  const parts = [['Input', r => r.in, 'var(--mix-1)'], ['Cache read', r => r.cr, 'var(--mix-2)'], ['Cache write', r => r.cw5 + r.cw1h, 'var(--mix-3)'], ['Output', r => r.out, 'var(--mix-4)']]
+    .map(([name, f, c]) => ({ name, c, v: recs.reduce((a, r) => a + f(r), 0) }));
+  const t = Math.max(1, parts.reduce((a, p) => a + p.v, 0));
+  $('mix').innerHTML = parts.map(p => `<div title="${p.name} ${fmt(p.v)}" style="width:${(p.v / t * 100).toFixed(2)}%;background:${p.c}"></div>`).join('');
+  $('mixList').innerHTML = parts.map(p => `<div><i style="background:${p.c}"></i>${p.name}<b>${fmt(p.v)} <span class="muted">${pct(p.v / t)}</span></b></div>`).join('');
+}
+
+function renderGroup(id, recs, keyFn, label, tokAll, costAll, limit = 50) {
+  const m = new Map();
+  for (const r of recs) {
+    const k = keyFn(r); const g = m.get(k) || { k, tool: r.tool, turns: 0, tokens: 0, out: 0, cost: 0, priced: true, last: '' };
+    g.turns++; g.tokens += total(r); g.out += r.out; g.cost += r.cost || 0; if (r.cost == null) g.priced = false; if (r.ts > g.last) g.last = r.ts; if (g.tool !== r.tool) g.tool = 'mixed';
+    m.set(k, g);
+  }
+  const rows = [...m.values()].sort((a, b) => b.tokens - a.tokens).slice(0, limit);
+  const max = rows[0]?.tokens || 1;
+  $(id).innerHTML = rows.length ? `<tr><th>${label}</th><th class="n">Turns</th><th class="n">Tokens</th><th class="n">Cost</th><th class="n">Share</th></tr>` + rows.map(g =>
+    `<tr><td class="trunc" title="${esc(g.k)}">${g.tool !== 'mixed' ? `<span class="tool" style="background:var(--${g.tool})"></span>` : ''}${esc(g.k)}</td><td class="n">${g.turns}</td><td class="n">${fmt(g.tokens)}<span class="bar" style="width:${Math.round(g.tokens / max * 48)}px"></span></td><td class="n">${g.priced ? usd(g.cost) : '<span class="muted">unpriced</span>'}</td><td class="n">${pct(g.tokens / Math.max(1, tokAll))}</td></tr>`).join('') : '<tr><td class="empty">No data in this range</td></tr>';
+}
+
+function renderFeed(recs) {
+  const rows = recs.slice(-60).reverse();
+  $('feedCount').textContent = rows.length ? `· latest ${rows.length} of ${recs.length.toLocaleString()} turns` : '';
+  $('feed').innerHTML = rows.length ? `<tr><th>Time</th><th>Tool</th><th>Model</th><th>Project</th><th class="n">Input</th><th class="n">Cache read</th><th class="n">Cache write</th><th class="n">Output</th><th class="n">Cost</th></tr>` + rows.map(r => {
+    const id = r.ts + r.session + r.out; const isNew = state.seen.size && !state.seen.has(id); state.seen.add(id);
+    return `<tr class="${isNew ? 'new' : ''}"><td class="mono">${new Date(r.ts).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' })}</td><td><span class="tool" style="background:var(--${r.tool})"></span>${TOOL_NAME[r.tool]}${r.sub ? ' <span class="muted">sub</span>' : ''}</td><td class="mono">${esc(r.model)}</td><td class="trunc" title="${esc(r.project)}">${esc(short(r.project))}</td><td class="n">${fmt(r.in)}</td><td class="n">${fmt(r.cr)}</td><td class="n">${fmt(r.cw5 + r.cw1h)}</td><td class="n">${fmt(r.out)}</td><td class="n">${r.cost == null ? '<span class="muted">–</span>' : usd(r.cost)}</td></tr>`;
+  }).join('') : '<tr><td class="empty">No turns yet. Send a prompt in Claude Code or Codex and it will appear here.</td></tr>';
+}
+
+function fillSelects() {
+  const d = state.data;
+  const opts = (sel, values, cur) => { sel.innerHTML = sel.options[0].outerHTML + values.map(v => `<option value="${esc(v)}" ${v === cur ? 'selected' : ''}>${esc(sel === $('project') ? short(v) : v)}</option>`).join(''); };
+  const count = f => [...d.records.reduce((m, r) => m.set(f(r), (m.get(f(r)) || 0) + total(r)), new Map()).entries()].sort((a, b) => b[1] - a[1]).map(e => e[0]);
+  opts($('project'), count(r => r.project), state.project);
+  opts($('model'), count(r => r.model), state.model);
+}
+
+async function load() {
+  try {
+    const v = await (await fetch('/api/version')).json();
+    if (v.version === state.version) return setLive(true);
+    const d = await (await fetch('/api/usage')).json();
+    state.data = d; state.version = d.version;
+    fillSelects(); render();
+    $('srcClaude').innerHTML = `Claude Code: <code>${esc(d.sources.claude)}/projects</code>`;
+    $('srcCodex').innerHTML = `Codex: <code>${esc(d.sources.codex)}/sessions</code>`;
+    $('scanned').textContent = `${d.records.length.toLocaleString()} turns indexed · updated ${new Date(d.generated * 1000).toLocaleTimeString()}`;
+    setLive(true);
+  } catch (e) { setLive(false); }
+}
+function setLive(ok) { $('live').classList.toggle('stale', !ok); $('liveText').textContent = ok ? 'live' : 'server unreachable'; }
+
+for (const id of ['range', 'tool', 'metric']) $(id).addEventListener('click', e => {
+  const btn = e.target.closest('button'); if (!btn) return;
+  $(id).querySelectorAll('button').forEach(b => b.classList.toggle('on', b === btn));
+  state[id] = btn.dataset.v; render();
+});
+$('project').onchange = e => { state.project = e.target.value; render(); };
+$('model').onchange = e => { state.model = e.target.value; render(); };
+$('tableToggle').onclick = () => { state.table = !state.table; $('chartWrap').classList.toggle('hide', state.table); $('chartTable').classList.toggle('hide', !state.table); $('tableToggle').textContent = state.table ? 'Chart' : 'Table'; };
+const applyTheme = t => { document.documentElement.dataset.theme = t; try { localStorage.setItem('tm-theme', t); } catch (e) {} };
+$('theme').onclick = () => applyTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark');
+let saved = null; try { saved = localStorage.getItem('tm-theme'); } catch (e) {}
+applyTheme(saved || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
+addEventListener('resize', () => state.data && render());
+load(); setInterval(load, 4000);
+</script>
+</body>
+</html>
