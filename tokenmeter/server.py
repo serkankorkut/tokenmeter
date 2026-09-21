@@ -13,6 +13,7 @@ import subprocess
 import sys
 import threading
 import time
+import traceback
 import webbrowser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
@@ -382,7 +383,14 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(data)
 
     def do_GET(self):
-        url = urlparse(self.path)
+        try:
+            self.route(urlparse(self.path))
+        except Exception:
+            err = traceback.format_exc()
+            print(f"tokenmeter: error serving {self.path}\n{err}", file=sys.stderr, flush=True)
+            self.send(json.dumps({"error": err.strip().splitlines()[-1], "path": self.path}), status=500)
+
+    def route(self, url):
         if url.path == "/":
             with open(os.path.join(HERE, "index.html"), "rb") as f:
                 return self.send(f.read(), "text/html; charset=utf-8")
