@@ -140,7 +140,9 @@ python3 test_server.py
 python3 -m tokenmeter --open
 ```
 
-Release: bump the version in `pyproject.toml` and `tokenmeter/__init__.py`, tag `vX.Y.Z` and push. The GitHub Action publishes to PyPI via trusted publishing. Then regenerate the Homebrew formula with `release/brew-formula.sh > ../homebrew-tap/Formula/tokenmeter.rb`.
+Release: bump the version in `pyproject.toml`, `tokenmeter/server.py` and `.claude-plugin/plugin.json`, tag `vX.Y.Z` and push. The GitHub Action publishes to PyPI via trusted publishing. Then run `release/brew-formula.sh > ../homebrew-tap/Formula/tokenmeter.rb` and push the tap: the script mirrors the sdist to a GitHub Release on the public tap repo and points the formula at it, so Homebrew installs are counted. `release/brew-stats.sh` prints those counts; PyPI downloads are at pypistats.org.
+
+What shows where: the PyPI summary line is `description` in `pyproject.toml`, the PyPI long description is this README, the Homebrew one-liner is `desc` in `release/brew-formula.sh`, and the Claude Code plugin blurb is `.claude-plugin/plugin.json`. PyPI text only changes with a new release.
 
 ## Roadmap
 
