@@ -1,8 +1,8 @@
 # Tokenmeter
 
-![Tokenmeter demo](docs/demo.gif)
+![Tokenmeter demo](https://raw.githubusercontent.com/serkankorkut/homebrew-tap/main/docs/demo.gif)
 
-A local dashboard that shows token usage and estimated cost for every prompt you send in **Claude Code** and **Codex**. Zero dependencies: one Python file, one HTML file, nothing leaves your machine.
+A local dashboard that shows token usage, real cost, cache misses and rate-limit windows for every prompt you send in **Claude Code**, **Codex** and **GitHub Copilot CLI**. Zero dependencies: one Python file, one HTML file, nothing leaves your machine.
 
 ## What you get
 
@@ -20,7 +20,7 @@ A local dashboard that shows token usage and estimated cost for every prompt you
 
 ## How it works
 
-Nothing is installed inside Claude Code or Codex. Both tools already save every conversation to a log file on your disk, and each model reply in that log includes how many tokens it used. Tokenmeter just reads those logs.
+Nothing is installed inside Claude Code, Codex or Copilot. All three already save every conversation to a log file on your disk, and each model reply in that log includes how many tokens it used. Tokenmeter just reads those logs.
 
 1. Claude Code saves logs in `~/.claude/projects/`, Codex in `~/.codex/sessions/`, Copilot CLI in `~/.copilot/session-store.db`.
 2. `server.py` reads every log once, pulls out each prompt and each model reply with its token counts, and keeps them in memory.
