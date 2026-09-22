@@ -19,7 +19,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 from urllib.request import Request, urlopen
 
-__version__ = "0.2.0"
+__version__ = "0.2.1"
 HERE = os.path.dirname(os.path.abspath(__file__))
 HOME = os.path.expanduser("~")
 CLAUDE_DIR = os.environ.get("CLAUDE_CONFIG_DIR", os.path.join(HOME, ".claude"))
@@ -34,6 +34,14 @@ TOKEN = os.environ.get("TOKENMETER_TOKEN", "")
 
 with open(os.path.join(HERE, "pricing.json")) as f:
     _cfg = json.load(f)
+USER_CONFIG = os.path.join(DATA_DIR, "config.json")
+if os.path.exists(USER_CONFIG):
+    with open(USER_CONFIG) as f:
+        for k, v in json.load(f).items():
+            if isinstance(v, dict) and isinstance(_cfg.get(k), dict):
+                _cfg[k].update(v)
+            else:
+                _cfg[k] = v
 PRICING = {k: v for k, v in _cfg.items() if not k.startswith("_")}
 PLANS = {k: v for k, v in _cfg.get("_plans", {}).items() if not k.startswith("_")}
 BUDGET = {k: v for k, v in _cfg.get("_budget", {}).items() if not k.startswith("_") and v}

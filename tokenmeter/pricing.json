@@ -1,6 +1,6 @@
 {
-  "_comment": "USD per 1M tokens at API list price. Keys are model-id prefixes, longest match wins. Edit freely; unknown models show as unpriced in the dashboard. Anthropic rates from the Claude API docs, OpenAI rates from developers.openai.com/api/docs/pricing (Sep 2026). OpenAI does not charge for cache writes.",
-  "_plans": {"_comment": "What you actually pay per month for each tool. Used to show how much API-equivalent value your subscription delivered.", "claude": 100, "codex": 20, "copilot": 0},
+  "_comment": "USD per 1M tokens at API list price. Keys are model-id prefixes, longest match wins. Unknown models show as unpriced in the dashboard. Override anything in ~/.tokenmeter/config.json (same shape, only the keys you want to change). Anthropic rates from the Claude API docs, OpenAI rates from developers.openai.com/api/docs/pricing (Sep 2026). OpenAI does not charge for cache writes.",
+  "_plans": {"_comment": "What you actually pay per month for each tool, USD. 0 means no subscription, so the dashboard shows API-equivalent cost on top. Set your own values in ~/.tokenmeter/config.json, not here.", "claude": 0, "codex": 0, "copilot": 0},
   "_budget": {"_comment": "Optional USD caps in API-equivalent cost. When exceeded you get a desktop notification once per day/month. null disables.", "daily": null, "monthly": null},
   "_context_windows": {"_comment": "Tokens, by model prefix. Used for the context fill gauge of active sessions.", "claude": 1000000, "claude-haiku": 200000, "gpt": 272000, "codex": 258400},
   "claude-fable-5-1": {"input": 10, "cache_read": 0.25, "cache_write_5m": 12.5, "cache_write_1h": 20, "output": 50},

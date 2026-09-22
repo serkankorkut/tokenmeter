@@ -76,8 +76,14 @@ svg.chart rect.hit { fill: transparent; }
 .mixlist i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; margin-right: 6px; vertical-align: -1px; }
 table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; font-size: 13px; }
 th, td { text-align: left; padding: 8px 8px; border-bottom: 1px solid var(--line-soft); white-space: nowrap; }
-th { font-weight: 500; color: var(--text-2); font-size: 12px; cursor: pointer; user-select: none; position: sticky; top: 0; background: var(--surface); }
+th { font-weight: 500; color: var(--text-2); font-size: 12px; cursor: pointer; user-select: none; position: sticky; top: 0; background: var(--surface); z-index: 2; }
+th:hover { z-index: 3; }
 th:hover, th.on { color: var(--text); }
+.info { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 14px; height: 14px; border-radius: 50%; border: 1px solid var(--text-3); color: var(--text-3); font-size: 10px; font-style: italic; font-family: Georgia, serif; vertical-align: 1px; cursor: help; }
+.info::after { content: attr(data-tip); position: absolute; right: -4px; top: calc(100% + 8px); width: 280px; white-space: normal; text-align: left; background: var(--text); color: var(--bg); padding: 9px 11px; border-radius: 8px; font: 12px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-style: normal; font-weight: 400; opacity: 0; pointer-events: none; z-index: 30; transition: opacity .1s; }
+.info:hover::after, .info:focus::after { opacity: 1; }
+th:hover .info { color: var(--text); border-color: var(--text); }
+th .muted { font-weight: 400; }
 td.n, th.n { text-align: right; }
 td.mono, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
 .tool { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 7px; vertical-align: 1px; }
@@ -91,7 +97,8 @@ tr.pfull td { white-space: normal; background: var(--line-soft); padding: 12px 1
 tr.pfull code, .notice code, footer code { font-family: ui-monospace, Menlo, monospace; background: var(--bg); padding: 1px 5px; border-radius: 4px; user-select: all; }
 .trunc { max-width: 260px; overflow: hidden; text-overflow: ellipsis; }
 td.commit { max-width: 180px; } td.repo { max-width: 110px; }
-.scroll { overflow: auto; max-height: 420px; }
+.scroll { overflow: auto; max-height: 420px; padding-bottom: 2px; }
+.scroll table { position: relative; }
 .muted { color: var(--text-3); font-size: 12px; }
 footer { margin-top: 20px; color: var(--text-3); font-size: 12px; display: flex; gap: 16px; flex-wrap: wrap; }
 .empty { padding: 30px; text-align: center; color: var(--text-3); white-space: normal; }
@@ -135,6 +142,14 @@ footer { margin-top: 20px; color: var(--text-3); font-size: 12px; display: flex;
 <div class="notice alert hide" id="alerts"></div>
 <div class="notice hide" id="unpriced"></div>
 
+<details class="notice" id="howCost" style="margin-bottom:14px"><summary style="cursor:pointer;font-weight:600;color:var(--text)">How cost is calculated</summary>
+<p style="margin:10px 0 6px">Every model reply reports how many tokens of each type it used. Tokenmeter multiplies each type by that model's list price and adds them up:</p>
+<p style="margin:0 0 10px;font-family:ui-monospace,Menlo,monospace;font-size:12px">cost = cached reads × read price + uncached input × input price + cache writes × write price + output × output price, all per million tokens</p>
+<p style="margin:0 0 10px">The types are priced very differently, so the token total alone does not predict cost. On Claude a cached read is about 2% of a fresh token, and output is 2 to 5 times a fresh token. Claude Code writes its cache with the 1-hour rate. OpenAI models do not charge for cache writes. The rates in use right now:</p>
+<div class="scroll" style="max-height:240px"><table id="rateTable"></table></div>
+<p class="muted" style="margin:10px 0 0">These are API list prices from <code>pricing.json</code>. If you are on a subscription you pay the plan price instead; the Spend tile shows that first and this API-equivalent figure below it.</p>
+</details>
+
 <div class="grid kpis">
   <div class="card kpi"><div class="label" id="kCostLabel">Spend</div><div class="value" id="kCost">–</div><div class="sub" id="kCostSub"></div><div class="meter hide" id="kBudget"><div></div></div></div>
   <div class="card kpi"><div class="label">Total tokens</div><div class="value" id="kTokens">–</div><div class="sub" id="kTokensSub"></div></div>
@@ -144,10 +159,8 @@ footer { margin-top: 20px; color: var(--text-3); font-size: 12px; display: flex;
   <div class="card kpi"><div class="label">Model turns</div><div class="value" id="kTurns">–</div><div class="sub" id="kTurnsSub"></div></div>
 </div>
 
-<div class="card" id="expensiveCard" style="margin-bottom:14px"><h2>Most expensive prompts <span class="hint">click a row for the full text</span></h2><div class="scroll"><table id="expensive"></table></div></div>
-
 <div class="card" id="promptsCard" style="margin-bottom:14px">
-  <h2>Prompts <span class="muted" id="promptCount"></span><span class="hint">Click a row for the full text and a resume command · click a header to sort</span></h2>
+  <h2>Prompts <span class="muted" id="promptCount"></span><span class="hint">Click a row for the full text, the cost math and a resume command · click Cost to see the most expensive first</span></h2>
   <div class="scroll" style="max-height:520px"><table id="prompts"></table></div>
 </div>
 
@@ -229,13 +242,14 @@ const prevBounds = ([s, e]) => s ? [new Date(s - (e - s)), s] : null;
 
 function attribute(recs, prompts) {
   const bySession = new Map();
-  for (const p of prompts) { if (!bySession.has(p.session)) bySession.set(p.session, []); bySession.get(p.session).push({ p, turns: 0, tokens: 0, cost: 0, priced: true, last: p.ts }); }
+  for (const p of prompts) { if (!bySession.has(p.session)) bySession.set(p.session, []); bySession.get(p.session).push({ p, turns: 0, tokens: 0, cr: 0, fresh: 0, out: 0, crCost: 0, freshCost: 0, outCost: 0, models: new Set(), cost: 0, priced: true, last: p.ts }); }
   const owner = new Map();
   for (const r of recs) {
     const list = bySession.get(r.session); if (!list) continue;
     let g = null; for (const x of list) { if (x.p.ts <= r.ts) g = x; else break; }
     if (!g) continue;
-    g.turns++; g.tokens += total(r); g.cost += r.cost || 0; if (r.cost == null) g.priced = false; if (r.ts > g.last) g.last = r.ts; owner.set(r, g);
+    g.turns++; g.tokens += total(r); g.cr += r.cr; g.fresh += r.in + r.cw5 + r.cw1h; g.out += r.out; g.cost += r.cost || 0; if (r.cost == null) g.priced = false; if (r.ts > g.last) g.last = r.ts; owner.set(r, g); g.models.add(r.model);
+    const q = state.data.pricing[r.model]; if (q) { g.crCost += r.cr * q.cache_read / 1e6; g.freshCost += (r.in * q.input + r.cw5 * q.cache_write_5m + r.cw1h * q.cache_write_1h) / 1e6; g.outCost += r.out * q.output / 1e6; }
   }
   const groups = [...bySession.values()].flat().map(g => Object.assign(g, { dur: new Date(g.last) - new Date(g.p.ts), text: g.p.text || '', ts: g.p.ts, tool: g.p.tool, project: g.p.project }));
   return { groups, owner };
@@ -246,15 +260,22 @@ function table(id, cols, rows, opts = {}) {
   const col = cols.find(c => c.k === st.k) || cols[0];
   rows = [...rows].sort((a, b) => { const x = a[col.k], y = b[col.k]; const r = typeof x === 'number' || typeof y === 'number' ? (x || 0) - (y || 0) : String(x ?? '').localeCompare(String(y ?? '')); return r * st.dir; });
   if (opts.limit) rows = rows.slice(0, opts.limit);
-  const head = cols.map(c => `<th class="${c.n ? 'n' : ''} ${c.k === col.k ? 'on' : ''}" data-k="${c.k}">${c.label}${c.k === col.k ? (st.dir < 0 ? ' ▼' : ' ▲') : ''}</th>`).join('');
+  const label = c => c.tip ? (c.label.includes('class="info"') ? c.label.replace('class="info"', `class="info" data-tip="${esc(c.tip)}"`) : `${c.label} <span class="info" data-tip="${esc(c.tip)}">i</span>`) : c.label;
+  const head = cols.map(c => `<th class="${c.n ? 'n' : ''} ${c.k === col.k ? 'on' : ''}" data-k="${c.k}">${label(c)}${c.k === col.k ? (st.dir < 0 ? ' ▼' : ' ▲') : ''}</th>`).join('');
   const body = rows.map((r, i) => `<tr ${opts.attrs ? opts.attrs(r, i) : ''}>${cols.map(c => `<td class="${c.n ? 'n' : ''} ${c.cls || ''}" ${c.title ? `title="${esc(c.title(r))}"` : ''}>${c.fmt ? c.fmt(r[c.k], r) : esc(r[c.k])}</td>`).join('')}</tr>${opts.extra ? opts.extra(r, i) : ''}`).join('');
   const el = $(id);
   el.innerHTML = rows.length ? `<tr>${head}</tr>${body}` : `<tr><td class="empty">${opts.empty || 'No data in this range'}</td></tr>`;
   el.querySelectorAll('th').forEach(th => th.onclick = () => { if (st.k === th.dataset.k) st.dir *= -1; else { st.k = th.dataset.k; st.dir = -1; } render(); });
   return rows;
 }
+const COST_TIP = 'Cost = tokens × the price of each token type for that model. Token types are priced very differently: on Claude Fable a cache read is $0.25 per million, a cache write $12.50 to $20, output $50. So a prompt with more tokens can cost less when most of them are cheap cache reads, and a cheaper model makes the same tokens cost less. Prices live in pricing.json.';
+const COST_LABEL = 'Cost <span class="muted">(affected by model and token type)</span> <span class="info">i</span>';
+const TOKEN_COLS = [
+  { k: 'cr', label: 'Cached <span class="info">i</span>', tip: 'Cache reads: the conversation re-sent from cache on every turn. The cheapest token type, about 2% of the price of a fresh token on Claude. Grows with turn count.', n: 1, fmt: fmt },
+  { k: 'fresh', label: 'Fresh <span class="info">i</span>', tip: 'Uncached input plus cache writes: context sent for the first time, or re-written after a cache miss. Priced 50 to 80 times higher than a cached read. This column drives most of the cost.', n: 1, fmt: fmt },
+  { k: 'out', label: 'Output <span class="info">i</span>', tip: 'Tokens the model wrote, including thinking. Highest price per token, but usually a small share of the total.', n: 1, fmt: fmt },
+];
 const costCell = (v, r) => r.priced === false ? '<span class="muted">unpriced</span>' : usd(v);
-const tokCell = max => (v, r) => `${fmt(v)}<span class="bar" style="width:${Math.round(v / max * 48)}px"></span>`;
 
 function render() {
   const d = state.data; if (!d) return;
@@ -284,20 +305,20 @@ function render() {
   $('alerts').classList.toggle('hide', !d.alerts.length);
   $('alerts').innerHTML = d.alerts.slice(-3).map(a => `<b>${esc(a.title)}</b> ${esc(a.body)} <span class="muted">${ago(a.ts * 1000)}</span>`).join('<br>');
   const att = attribute(recs, prompts);
+  renderRates(recs);
   renderLimits();
   renderSessions();
   renderChart(recs, prompts, b);
   renderMix(recs);
-  const groups = keyFn => { const m = new Map(); for (const r of recs) { const k = keyFn(r); const g = m.get(k) || { k, tool: r.tool, turns: 0, tokens: 0, cost: 0, priced: true, share: 0 }; g.turns++; g.tokens += total(r); g.cost += r.cost || 0; if (r.cost == null) g.priced = false; if (g.tool !== r.tool) g.tool = 'mixed'; m.set(k, g); } const rows = [...m.values()]; rows.forEach(g => g.share = g.tokens / Math.max(1, tokens)); return rows; };
+  const groups = keyFn => { const m = new Map(); for (const r of recs) { const k = keyFn(r); const g = m.get(k) || { k, tool: r.tool, turns: 0, tokens: 0, cr: 0, fresh: 0, out: 0, cost: 0, priced: true, share: 0 }; g.turns++; g.tokens += total(r); g.cr += r.cr; g.fresh += r.in + r.cw5 + r.cw1h; g.out += r.out; g.cost += r.cost || 0; if (r.cost == null) g.priced = false; if (g.tool !== r.tool) g.tool = 'mixed'; m.set(k, g); } const rows = [...m.values()]; rows.forEach(g => g.share = g.tokens / Math.max(1, tokens)); return rows; };
   const nameCell = (v, r) => `${r.tool !== 'mixed' ? `<span class="tool" style="background:var(--${r.tool})"></span>` : ''}${esc(v)}`;
-  const groupCols = (label, rows) => [{ k: 'k', label, fmt: nameCell, cls: 'trunc', title: r => r.k }, { k: 'turns', label: 'Turns', n: 1 }, { k: 'tokens', label: 'Tokens', n: 1, fmt: tokCell(Math.max(1, ...rows.map(x => x.tokens))) }, { k: 'cost', label: 'Cost', n: 1, fmt: costCell }, { k: 'share', label: '% of tokens', n: 1, fmt: pct }];
-  let rows = groups(r => r.model); table('byModel', groupCols('Model', rows), rows, { sort: 'tokens' });
-  rows = groups(r => short(r.project)); table('byProject', groupCols('Project', rows), rows, { sort: 'tokens' });
+  const groupCols = (label, rows) => [{ k: 'k', label, fmt: nameCell, cls: 'trunc', title: r => r.k }, { k: 'turns', label: 'Turns', n: 1 }, ...TOKEN_COLS, { k: 'cost', label: COST_LABEL, tip: COST_TIP, n: 1, fmt: costCell }, { k: 'share', label: '% of tokens', n: 1, fmt: pct }];
+  let rows = groups(r => r.model); table('byModel', groupCols('Model', rows), rows, { sort: 'cost' });
+  rows = groups(r => short(r.project)); table('byProject', groupCols('Project', rows), rows, { sort: 'cost' });
   const firstPrompt = new Map();
   for (const p of d.prompts) if (p.text && !firstPrompt.has(p.session)) firstPrompt.set(p.session, p.text.replace(/\s+/g, ' ').slice(0, 60));
-  rows = groups(r => firstPrompt.get(r.session) || ((r.session || '').slice(0, 8) + ' · ' + short(r.project))); table('bySession', groupCols('Session', rows), rows, { sort: 'tokens', limit: 20 });
+  rows = groups(r => firstPrompt.get(r.session) || ((r.session || '').slice(0, 8) + ' · ' + short(r.project))); table('bySession', groupCols('Session', rows), rows, { sort: 'cost', limit: 20 });
   renderPrompts(att.groups, prompts.length);
-  renderExpensive(att.groups);
   renderMisses(recs, att.owner);
   renderCommits(recs);
   renderFeed(recs);
@@ -324,6 +345,16 @@ function renderCost(recs, cost, prev) {
   const budget = state.range === 'today' ? d.budget.daily : state.range === '30' ? d.budget.monthly : null;
   $('kBudget').classList.toggle('hide', !budget);
   if (budget) { const f = cost / budget; $('kBudget').className = 'meter' + (f > 1 ? ' bad' : f > 0.8 ? ' warn' : ''); $('kBudget').firstElementChild.style.width = Math.min(100, f * 100) + '%'; $('kCostSub').innerHTML += `<br><b>${pct(f)}</b> of ${usd(budget)} ${state.range === 'today' ? 'daily' : 'monthly'} budget`; }
+}
+
+function renderRates(recs) {
+  const P = state.data.pricing;
+  const used = [...new Set(recs.map(r => r.model))].filter(m => P[m]).sort();
+  const money = v => v ? '$' + (v >= 1 ? v.toFixed(2).replace(/\.?0+$/, '') : v) : 'free';
+  $('rateTable').innerHTML = `<tr><th>Model</th><th class="n">Cached read</th><th class="n">Uncached input</th><th class="n">Cache write 5m</th><th class="n">Cache write 1h</th><th class="n">Output</th></tr>` +
+    used.map(m => `<tr><td class="mono">${esc(m)}</td><td class="n">${money(P[m].cache_read)}</td><td class="n">${money(P[m].input)}</td><td class="n">${money(P[m].cache_write_5m)}</td><td class="n">${money(P[m].cache_write_1h)}</td><td class="n">${money(P[m].output)}</td></tr>`).join('') +
+    `<tr><td colspan="6" class="muted">USD per 1M tokens</td></tr>`;
+  $('rateTable').querySelectorAll('th').forEach(th => th.style.cursor = 'default');
 }
 
 function renderLimits() {
@@ -448,12 +479,14 @@ const promptCols = () => [
   { k: 'project', label: 'Project', cls: 'trunc', title: r => r.project, fmt: short },
   { k: 'text', label: 'Prompt', cls: 'wrap', fmt: v => v ? esc(v.replace(/\s+/g, ' ').slice(0, 110)) + (v.length > 110 ? '…' : '') : '<span class="muted">context-only turn, no prompt text</span>' },
   { k: 'turns', label: 'Turns', n: 1 },
-  { k: 'tokens', label: 'Tokens', n: 1, fmt: fmt },
-  { k: 'cost', label: 'Cost', n: 1, fmt: costCell },
+  ...TOKEN_COLS,
+  { k: 'cost', label: COST_LABEL, tip: COST_TIP, n: 1, fmt: costCell },
   { k: 'dur', label: 'Took', n: 1, fmt: ms => ms < 1000 ? '' : ms < 60000 ? Math.round(ms / 1000) + 's' : Math.round(ms / 60000) + 'm' },
 ];
 const resumeCmd = p => ({ claude: `claude --resume ${p.session}`, codex: `codex resume ${p.session}`, copilot: `copilot --resume ${p.session}` })[p.tool];
-const promptExtra = cols => g => `<tr class="pfull ${state.open.has(g.p.id) ? '' : 'hide'}"><td colspan="${cols}"><div class="full">${esc(g.text) || '<span class="muted">No plain-text prompt was recorded for this turn.</span>'}</div><div class="muted" style="margin-top:8px">Resume this session: <code>${esc(resumeCmd(g.p))}</code> · prompt id <code>${esc(g.p.id)}</code>${g.p.user !== state.data.me ? ` · by <b>${esc(g.p.user)}</b>` : ''}</div></td></tr>`;
+const rate = (g, key) => { const ms = [...g.models].map(m => state.data.pricing[m]).filter(Boolean); if (!ms.length) return ''; const v = [...new Set(ms.map(q => key === 'fresh' ? `$${q.cache_write_1h}` : `$${q[key]}`))]; return v.length === 1 ? `× ${v[0]}/M` : '× mixed rates'; };
+const costMath = g => g.priced && g.cost ? `<div class="muted" style="margin-top:8px"><b>How this cost was calculated:</b> cached ${fmt(g.cr)} ${rate(g, 'cache_read')} = ${usd(g.crCost)} · fresh ${fmt(g.fresh)} ${rate(g, 'fresh')} = ${usd(g.freshCost)} · output ${fmt(g.out)} ${rate(g, 'output')} = ${usd(g.outCost)} · <b>total ${usd(g.cost)}</b> on ${esc([...g.models].join(', '))}${g.fresh && [...g.models].some(m => m.startsWith('claude')) ? '. Fresh uses the 1-hour cache write rate that Claude Code uses; the few uncached input tokens are priced at the input rate.' : ''}</div>` : '';
+const promptExtra = cols => g => `<tr class="pfull ${state.open.has(g.p.id) ? '' : 'hide'}"><td colspan="${cols}"><div class="full">${esc(g.text) || '<span class="muted">No plain-text prompt was recorded for this turn.</span>'}</div>${costMath(g)}<div class="muted" style="margin-top:8px">Resume this session: <code>${esc(resumeCmd(g.p))}</code> · prompt id <code>${esc(g.p.id)}</code>${g.p.user !== state.data.me ? ` · by <b>${esc(g.p.user)}</b>` : ''}</div></td></tr>`;
 function wireExpand(id, rows) {
   $(id).querySelectorAll('tr.prow').forEach((tr, i) => tr.onclick = () => {
     const pid = rows[i].p.id;
@@ -463,11 +496,7 @@ function wireExpand(id, rows) {
 }
 function renderPrompts(groups, totalPrompts) {
   $('promptCount').textContent = groups.length ? `· ${Math.min(150, groups.length)} of ${totalPrompts.toLocaleString()}` : '';
-  wireExpand('prompts', table('prompts', promptCols(), groups, { sort: 'ts', limit: 150, attrs: () => 'class="prow"', extra: promptExtra(8), empty: 'No prompts in this range' }));
-}
-function renderExpensive(groups) {
-  const cols = promptCols().filter(c => ['ts', 'tool', 'text', 'turns', 'tokens', 'cost'].includes(c.k));
-  wireExpand('expensive', table('expensive', cols, groups.filter(g => g.cost > 0), { sort: 'cost', limit: 10, attrs: () => 'class="prow"', extra: promptExtra(6), empty: 'No priced prompts in this range' }));
+  wireExpand('prompts', table('prompts', promptCols(), groups, { sort: 'ts', limit: 150, attrs: () => 'class="prow"', extra: promptExtra(10), empty: 'No prompts in this range' }));
 }
 
 function renderMisses(recs, owner) {
@@ -485,7 +514,7 @@ function renderMisses(recs, owner) {
     }
   }
   $('missHint').textContent = misses.length ? `${misses.length} misses · ${usd(sum(misses, m => m.cost))} spent re-writing cache` : 'none detected in this range';
-  const cols = [{ k: 'ts', label: 'Time', cls: 'mono', fmt: when }, { k: 'tool', label: 'Tool', fmt: toolDot }, { k: 'text', label: 'Prompt in progress', cls: 'wrap', fmt: (v, r) => v ? esc(v.replace(/\s+/g, ' ').slice(0, 80)) : `<span class="muted">${esc(short(r.project))}</span>` }, { k: 'lost', label: 'Cache lost', n: 1, fmt: fmt }, { k: 'rewritten', label: 'Re-written', n: 1, fmt: fmt }, { k: 'cost', label: 'Cost', n: 1, fmt: costCell }];
+  const cols = [{ k: 'ts', label: 'Time', cls: 'mono', fmt: when }, { k: 'tool', label: 'Tool', fmt: toolDot }, { k: 'text', label: 'Prompt in progress', cls: 'wrap', fmt: (v, r) => v ? esc(v.replace(/\s+/g, ' ').slice(0, 80)) : `<span class="muted">${esc(short(r.project))}</span>` }, { k: 'lost', label: 'Cache lost', n: 1, fmt: fmt }, { k: 'rewritten', label: 'Re-written', n: 1, fmt: fmt }, { k: 'cost', label: COST_LABEL, tip: COST_TIP, n: 1, fmt: costCell }];
   const rows = table('misses', cols, misses, { sort: 'cost', limit: 12, attrs: r => r.g ? 'class="prow"' : '', extra: r => r.g ? promptExtra(6)(r.g) : '', empty: 'No cache misses in this range. A miss is a turn where the cached prefix shrank by half and a large prefix was re-written, usually after editing history or a long idle gap.' });
   wireExpand('misses', rows.filter(r => r.g));
 }
@@ -498,19 +527,19 @@ function renderCommits(recs) {
     const groups = new Map();
     for (const r of recs.filter(r => r.project === project && r.user === state.data.me)) {
       const c = sorted.find(c => c.ts >= r.ts) || { sha: 'uncommitted', ts: '', subject: 'Not committed yet' };
-      const g = groups.get(c.sha) || { sha: c.sha, subject: c.subject, ts: c.ts || r.ts, project: short(project), turns: 0, tokens: 0, cost: 0, priced: true };
-      g.turns++; g.tokens += total(r); g.cost += r.cost || 0; if (r.cost == null) g.priced = false; groups.set(c.sha, g);
+      const g = groups.get(c.sha) || { sha: c.sha, subject: c.subject, ts: c.ts || r.ts, project: short(project), turns: 0, tokens: 0, cr: 0, fresh: 0, out: 0, cost: 0, priced: true };
+      g.turns++; g.tokens += total(r); g.cr += r.cr; g.fresh += r.in + r.cw5 + r.cw1h; g.out += r.out; g.cost += r.cost || 0; if (r.cost == null) g.priced = false; groups.set(c.sha, g);
     }
     rows.push(...groups.values());
   }
-  const cols = [{ k: 'subject', label: 'Commit', cls: 'trunc commit', title: r => `${r.sha}\n${r.subject}`, fmt: (v, r) => `${r.sha === 'uncommitted' ? '' : `<span class="mono muted">${r.sha.slice(0, 7)}</span> `}${esc(v.slice(0, 44))}${v.length > 44 ? '…' : ''}` }, { k: 'project', label: 'Repo', cls: 'trunc repo', fmt: v => esc(v.split('/').pop()), title: r => r.project }, { k: 'ts', label: 'Date', cls: 'mono', fmt: v => new Date(v).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) }, { k: 'turns', label: 'Turns', n: 1 }, { k: 'tokens', label: 'Tokens', n: 1, fmt: fmt }, { k: 'cost', label: 'Cost', n: 1, fmt: costCell }];
+  const cols = [{ k: 'subject', label: 'Commit', cls: 'trunc commit', title: r => `${r.sha}\n${r.subject}`, fmt: (v, r) => `${r.sha === 'uncommitted' ? '' : `<span class="mono muted">${r.sha.slice(0, 7)}</span> `}${esc(v.slice(0, 44))}${v.length > 44 ? '…' : ''}` }, { k: 'project', label: 'Repo', cls: 'trunc repo', fmt: v => esc(v.split('/').pop()), title: r => r.project }, { k: 'ts', label: 'Date', cls: 'mono', fmt: v => new Date(v).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) }, { k: 'turns', label: 'Turns', n: 1 }, { k: 'fresh', label: 'Fresh <span class="info">i</span>', tip: TOKEN_COLS[1].tip, n: 1, fmt: fmt }, { k: 'cost', label: COST_LABEL, tip: COST_TIP, n: 1, fmt: costCell }];
   table('commits', cols, rows, { sort: 'cost', limit: 15, empty: Object.keys(state.commits).length ? 'No turns in this range fall inside a git repository' : 'None of the projects with usage is a git repository on this machine' });
 }
 
 function renderFeed(recs) {
   const rows = recs.slice(-80).map(r => Object.assign({ cw: r.cw5 + r.cw1h, id: r.ts + r.session + r.out }, r));
   $('feedCount').textContent = rows.length ? `· latest ${rows.length} of ${recs.length.toLocaleString()} turns` : '';
-  const cols = [{ k: 'ts', label: 'Time', cls: 'mono', fmt: v => new Date(v).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' }) }, { k: 'tool', label: 'Tool', fmt: (v, r) => toolDot(v) + (r.sub ? ' <span class="muted">sub</span>' : '') }, { k: 'model', label: 'Model', cls: 'mono' }, { k: 'project', label: 'Project', cls: 'trunc', title: r => r.project, fmt: short }, { k: 'in', label: 'Input', n: 1, fmt: fmt }, { k: 'cr', label: 'Cache read', n: 1, fmt: fmt }, { k: 'cw', label: 'Cache write', n: 1, fmt: fmt }, { k: 'out', label: 'Output', n: 1, fmt: fmt }, { k: 'cost', label: 'Cost', n: 1, fmt: v => v == null ? '<span class="muted">–</span>' : usd(v) }];
+  const cols = [{ k: 'ts', label: 'Time', cls: 'mono', fmt: v => new Date(v).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' }) }, { k: 'tool', label: 'Tool', fmt: (v, r) => toolDot(v) + (r.sub ? ' <span class="muted">sub</span>' : '') }, { k: 'model', label: 'Model', cls: 'mono' }, { k: 'project', label: 'Project', cls: 'trunc', title: r => r.project, fmt: short }, { k: 'in', label: 'Input', n: 1, fmt: fmt }, { k: 'cr', label: 'Cache read', n: 1, fmt: fmt }, { k: 'cw', label: 'Cache write', n: 1, fmt: fmt }, { k: 'out', label: 'Output', n: 1, fmt: fmt }, { k: 'cost', label: COST_LABEL, tip: COST_TIP, n: 1, fmt: v => v == null ? '<span class="muted">–</span>' : usd(v) }];
   table('feed', cols, rows, { sort: 'ts', attrs: r => { const isNew = state.seen.size && !state.seen.has(r.id); state.seen.add(r.id); return isNew ? 'class="new"' : ''; }, empty: 'No turns yet. Send a prompt in Claude Code, Codex or Copilot and it will appear here.' });
 }
 

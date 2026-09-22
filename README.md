@@ -77,12 +77,18 @@ tokenmeter --open
 
 ## Configuration
 
-Everything lives in `pricing.json` next to `server.py`:
+Create `~/.tokenmeter/config.json` with only the keys you want to change. It is merged over the bundled `pricing.json` at startup, so upgrades never overwrite your settings. Example for someone on the $100 Claude plan and $20 ChatGPT Plus:
+
+```json
+{"_plans": {"claude": 100, "codex": 20}, "_budget": {"daily": 30}}
+```
+
+Available keys:
 
 | Key | Purpose |
 |---|---|
 | model prefixes | USD per million tokens: input, cache_read, cache_write_5m, cache_write_1h, output. Anthropic and OpenAI list prices are included |
-| `_plans` | What you pay per month per tool. Drives the Subscription spend tile |
+| `_plans` | What you pay per month per tool. Drives the Subscription spend tile. Default 0, which shows API-equivalent cost on top |
 | `_budget` | `daily` and `monthly` caps in API-equivalent USD. Desktop notification once per period when exceeded |
 | `_context_windows` | Context size by model prefix, for the context-fill gauge |
 
@@ -97,7 +103,7 @@ Environment and flags:
 | `--export URL` | | Push your last 30 days to a team server every hour. Prompt text is never sent |
 | `TOKENMETER_TOKEN` | | Shared secret for team ingest, sent as `X-Tokenmeter-Token` |
 | `CLAUDE_CONFIG_DIR`, `CODEX_HOME`, `COPILOT_DB` | `~/.claude`, `~/.codex`, `~/.copilot/session-store.db` | Where each tool keeps its logs |
-| `TOKENMETER_DIR` | `~/.tokenmeter` | Where team data is stored |
+| `TOKENMETER_DIR` | `~/.tokenmeter` | Where `config.json`, `server.log` and team data live |
 
 ### What "% of tokens" means
 

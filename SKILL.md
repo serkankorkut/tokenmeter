@@ -26,6 +26,6 @@ If the user asks a specific question ("how much did I spend today", "which proje
 ## Configuration
 
 - `TOKENMETER_PORT` or `--port N` changes the port.
-- `pricing.json` inside the `tokenmeter` package holds USD per million tokens by model-id prefix, plus `_plans` (what the user pays), `_budget` (alert caps) and `_context_windows`.
+- `~/.tokenmeter/config.json` overrides the bundled `pricing.json`: `_plans` (what the user pays per month per tool), `_budget` (alert caps), `_context_windows`, and model prices. If the user mentions their subscription price, write it there, for example `{"_plans": {"claude": 100, "codex": 20}}`.
 - `--export URL` pushes aggregates to a team server; `--host 0.0.0.0` runs one.
 - `CLAUDE_CONFIG_DIR` and `CODEX_HOME` override the transcript locations.
