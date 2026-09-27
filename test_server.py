@@ -76,4 +76,11 @@ long = server.rec("t", "codex", "gpt-6-sol", "/p", "s", 1000, 300000, 0, 0, 1000
 assert abs(server.cost_of(short) - (1000 * 2 + 100000 * 0.2 + 1000 * 10) / 1e6) < 1e-9, server.cost_of(short)
 assert abs(server.cost_of(long) - (1000 * 4 + 300000 * 0.4 + 1000 * 15) / 1e6) < 1e-9, server.cost_of(long)
 assert server.price_for("gpt-6-luna")["output"] == 0.5 and server.price_for("gpt-6-astra-2026")["input"] == 10
+import socket
+blocker = socket.socket(); blocker.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1); blocker.bind(("0.0.0.0", 0)); blocker.listen()
+busy_port = blocker.getsockname()[1]
+got, srv = server.bind("127.0.0.1", [busy_port, busy_port + 1, busy_port + 2])
+assert got in (busy_port + 1, busy_port + 2) and srv, got
+srv.server_close(); blocker.close()
+assert server.ports_to_try("9000") == [9000] and len(server.ports_to_try()) == 11 or server.PORT_SET
 print("ok")

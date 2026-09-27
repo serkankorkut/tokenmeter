@@ -33,6 +33,17 @@ class Tokenmeter < Formula
     virtualenv_install_with_resources
   end
 
+  def caveats
+    <<~EOS
+      Start Tokenmeter and open your dashboard in the browser:
+        tokenmeter start
+
+      Your dashboard lives at http://127.0.0.1:7788
+      It keeps running in the background and starts again at login.
+      Stop it any time with: tokenmeter stop
+    EOS
+  end
+
   service do
     run [opt_bin/"tokenmeter"]
     keep_alive true

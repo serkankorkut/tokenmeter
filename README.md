@@ -61,19 +61,13 @@ git clone https://github.com/serkankorkut/tokenmeter ~/repo/tokenmeter
 ~/repo/tokenmeter/install.sh
 ```
 
-With Homebrew you can keep it running in the background: `brew services start tokenmeter`.
-
-Then in either tool:
-
-```
-/tokenmeter
-```
-
-or from a shell:
+Then start it:
 
 ```bash
-tokenmeter --open
+tokenmeter start
 ```
+
+It runs in the background, opens http://127.0.0.1:7788, and with Homebrew it starts again at login. `tokenmeter stop` stops it; plain `tokenmeter` runs it in the terminal instead. Inside Claude Code or Codex, `/tokenmeter` does the same.
 
 ## Configuration
 
@@ -91,14 +85,17 @@ Available keys:
 | `_plans` | What you pay per month per tool. Drives the Subscription spend tile. Default 0, which shows API-equivalent cost on top |
 | `_budget` | `daily` and `monthly` caps in API-equivalent USD. Desktop notification once per period when exceeded |
 | `_context_windows` | Context size by model prefix, for the context-fill gauge |
+| `_port` | Port to use instead of 7788. Written for you by `tokenmeter start --port N` |
 
 Environment and flags:
 
 | Setting | Default | Purpose |
 |---|---|---|
-| `TOKENMETER_PORT` / `--port` | `7788` | Listen port |
+| `--port N` | `7788` | Listen port. With `start` it is saved as `_port` in `~/.tokenmeter/config.json`, so the background service uses it too. Without a saved port, Tokenmeter tries 7788 and, if another app holds it, the next 10 ports |
+| `TOKENMETER_PORT` | | Port for this run only, overrides the saved one |
 | `--host` | `127.0.0.1` | Bind address. Use `0.0.0.0` only for a team server |
-| `--open` | | Open the browser after starting |
+| `start`, `stop` | | Run in the background and open the browser; stop the background copy |
+| `--open` | | Open the browser after starting in the terminal |
 | `--user NAME` | your login | Name shown in team mode |
 | `--export URL` | | Push your last 30 days to a team server every hour. Prompt text is never sent |
 | `TOKENMETER_TOKEN` | | Shared secret for team ingest, sent as `X-Tokenmeter-Token` |

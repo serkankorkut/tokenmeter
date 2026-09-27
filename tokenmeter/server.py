@@ -8,6 +8,8 @@ import io
 import json
 import os
 import re
+import shutil
+import socket
 import sqlite3
 import subprocess
 import sys
@@ -19,7 +21,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 from urllib.request import Request, urlopen
 
-__version__ = "0.2.3"
+__version__ = "0.2.4"
 HERE = os.path.dirname(os.path.abspath(__file__))
 HOME = os.path.expanduser("~")
 CLAUDE_DIR = os.environ.get("CLAUDE_CONFIG_DIR", os.path.join(HOME, ".claude"))
@@ -27,7 +29,6 @@ CODEX_DIR = os.environ.get("CODEX_HOME", os.path.join(HOME, ".codex"))
 COPILOT_DB = os.environ.get("COPILOT_DB", os.path.join(HOME, ".copilot", "session-store.db"))
 DATA_DIR = os.environ.get("TOKENMETER_DIR", os.path.join(HOME, ".tokenmeter"))
 TEAM_DIR = os.path.join(DATA_DIR, "team")
-PORT = int(os.environ.get("TOKENMETER_PORT", "7788"))
 TEXT_CAP = 600
 USER = getpass.getuser()
 TOKEN = os.environ.get("TOKENMETER_TOKEN", "")
@@ -42,6 +43,9 @@ if os.path.exists(USER_CONFIG):
                 _cfg[k].update(v)
             else:
                 _cfg[k] = v
+PORT_SET = os.environ.get("TOKENMETER_PORT") or _cfg.get("_port")
+PORT = int(PORT_SET or 7788)
+PORT_SPAN = 10
 PRICING = {k: v for k, v in _cfg.items() if not k.startswith("_")}
 PLANS = {k: v for k, v in _cfg.get("_plans", {}).items() if not k.startswith("_")}
 BUDGET = {k: v for k, v in _cfg.get("_budget", {}).items() if not k.startswith("_") and v}
@@ -440,7 +444,7 @@ class Handler(BaseHTTPRequestHandler):
             with open(os.path.join(HERE, "index.html"), "rb") as f:
                 return self.send(f.read(), "text/html; charset=utf-8")
         if url.path == "/api/health":
-            return self.send(json.dumps({"ok": True, "app": "tokenmeter", "version": __version__, "user": USER}))
+            return self.send(json.dumps({"ok": True, "app": "tokenmeter", "version": __version__, "user": USER, "pid": os.getpid()}))
         if url.path == "/api/version":
             done, total = STORE.progress
             return self.send(json.dumps({"version": STORE.version, "indexing": STORE.indexing, "done": done, "total": total}))
@@ -483,12 +487,109 @@ class Handler(BaseHTTPRequestHandler):
         self.send(json.dumps({"ok": True, "records": len(recs)}))
 
 
-def already_running(port):
+def health(port):
     try:
-        with urlopen(f"http://127.0.0.1:{port}/api/health", timeout=1) as r:
-            return json.load(r).get("app") == "tokenmeter"
+        with urlopen(f"http://127.0.0.1:{port}/api/health", timeout=0.5) as r:
+            d = json.load(r)
+            return d if d.get("app") == "tokenmeter" else None
     except Exception:
-        return False
+        return None
+
+
+def ports_to_try(port_arg=None):
+    if port_arg or PORT_SET:
+        return [int(port_arg or PORT)]
+    return list(range(PORT, PORT + PORT_SPAN + 1))
+
+
+def find_running(ports):
+    for p in ports:
+        h = health(p)
+        if h:
+            return p, h
+    return None, None
+
+
+def taken(port):
+    with socket.socket() as s:
+        s.settimeout(0.5)
+        return s.connect_ex(("127.0.0.1", port)) == 0
+
+
+def bind(host, ports):
+    for p in ports:
+        if taken(p):
+            continue
+        try:
+            return p, ThreadingHTTPServer((host, p), Handler)
+        except OSError:
+            continue
+    return None, None
+
+
+def busy(ports):
+    which = f"Port {ports[0]} is" if len(ports) == 1 else f"Ports {ports[0]}-{ports[-1]} are all"
+    free = next((p for p in range(max(ports) + 1, max(ports) + 200) if not taken(p)), None)
+    hint = f" Pick a free one, for example: tokenmeter start --port {free}" if free else " Pick a free one with: tokenmeter start --port N"
+    return f"tokenmeter: {which} in use by other apps.{hint}"
+
+
+def save_port(port):
+    cfg = {}
+    if os.path.exists(USER_CONFIG):
+        with open(USER_CONFIG) as f:
+            cfg = json.load(f)
+    cfg["_port"] = port
+    os.makedirs(DATA_DIR, exist_ok=True)
+    with open(USER_CONFIG, "w") as f:
+        json.dump(cfg, f, indent=2)
+
+
+def brew_bin():
+    return shutil.which("brew") if "/Cellar/tokenmeter/" in HERE else None
+
+
+def control(cmd, port_arg):
+    ports = ports_to_try(port_arg)
+    brew = brew_bin()
+    if cmd == "stop":
+        if brew:
+            subprocess.run([brew, "services", "stop", "tokenmeter"], stdout=subprocess.DEVNULL)
+        for p in sorted(set(ports) | set(range(PORT, PORT + PORT_SPAN + 1))):
+            h = health(p)
+            if h:
+                os.kill(h["pid"], 15)
+        print("tokenmeter stopped")
+        return
+    p, h = find_running(ports)
+    if not p and not any(not taken(q) for q in ports):
+        print(busy(ports), file=sys.stderr)
+        sys.exit(1)
+    if port_arg:
+        save_port(int(port_arg))
+        print(f"tokenmeter: saved port {port_arg} to {USER_CONFIG}")
+    if not p:
+        if brew:
+            subprocess.run([brew, "services", "restart" if port_arg else "start", "tokenmeter"], stdout=subprocess.DEVNULL)
+        else:
+            os.makedirs(DATA_DIR, exist_ok=True)
+            log = open(os.path.join(DATA_DIR, "server.log"), "a")
+            flags = getattr(subprocess, "DETACHED_PROCESS", 0) | getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
+            subprocess.Popen([sys.executable, "-m", "tokenmeter"] + (["--port", str(port_arg)] if port_arg else []), stdout=log, stderr=log, stdin=subprocess.DEVNULL, start_new_session=True, creationflags=flags)
+        for _ in range(40):
+            p, h = find_running(ports)
+            if p:
+                break
+            time.sleep(0.25)
+        else:
+            print(f"tokenmeter did not start. See {os.path.join(DATA_DIR, 'server.log')}", file=sys.stderr)
+            sys.exit(1)
+    url = f"http://127.0.0.1:{p}"
+    if p != ports[0]:
+        print(f"\n  Port {ports[0]} is used by another app, so Tokenmeter is on {p}.")
+    print(f"\n  Tokenmeter is running. Your dashboard:\n\n    {url}\n")
+    print("  It keeps running in the background" + (" and starts again at login." if brew else ".") + " Stop it with: tokenmeter stop\n")
+    webbrowser.open(url)
 
 
 def arg(name, default=None):
@@ -502,20 +603,40 @@ def main():
         print(f"tokenmeter {__version__}")
         return
     if "--help" in sys.argv or "-h" in sys.argv:
-        print("usage: tokenmeter [--open] [--port N] [--host ADDR] [--user NAME] [--export URL] [--version]\n\nServes the Tokenmeter dashboard at http://127.0.0.1:7788 by default.")
+        print("""usage: tokenmeter start | stop
+       tokenmeter [--open] [--port N] [--host ADDR] [--user NAME] [--export URL] [--version]
+
+  start   run the dashboard in the background and open it in your browser
+  stop    stop the background dashboard
+  (none)  run in this terminal until Ctrl+C
+
+  --port N  use this port instead of 7788. With start it is saved, so later runs
+            and the background service use it too. Without a saved port, Tokenmeter
+            tries 7788 and, if another app has it, the next 10 ports.
+
+The dashboard is at http://127.0.0.1:7788 unless that port was taken.""")
         return
-    port = int(arg("--port", PORT))
+    port_arg = arg("--port")
+    if len(sys.argv) > 1 and sys.argv[1] in ("start", "stop"):
+        return control(sys.argv[1], port_arg)
     host = arg("--host", "127.0.0.1")
     USER = arg("--user", USER)
-    url = f"http://127.0.0.1:{port}"
-    if already_running(port):
-        print(f"tokenmeter already running at {url}")
+    ports = ports_to_try(port_arg)
+    port, running = find_running(ports)
+    if running:
+        print(f"tokenmeter already running at http://127.0.0.1:{port}")
         if "--open" in sys.argv:
-            webbrowser.open(url)
+            webbrowser.open(f"http://127.0.0.1:{port}")
         return
-    server = ThreadingHTTPServer((host, port), Handler)
+    port, server = bind(host, ports)
+    if not server:
+        print(busy(ports), file=sys.stderr)
+        sys.exit(1)
     server.daemon_threads = True
-    print(f"tokenmeter: serving {url}" + (f" (bound to {host})" if host != "127.0.0.1" else "") + ", indexing in the background", flush=True)
+    url = f"http://127.0.0.1:{port}"
+    if port != ports[0]:
+        print(f"\n  Port {ports[0]} is used by another app, so Tokenmeter is on {port}.", flush=True)
+    print(f"\n  Tokenmeter dashboard: {url}" + (f"  (bound to {host})" if host != "127.0.0.1" else "") + "\n  Open it in your browser. Press Ctrl+C to stop, or use tokenmeter start to run it in the background.\n", flush=True)
     done = lambda secs: print(f"tokenmeter: indexed {len(STORE.records()[0])} turns from {len(STORE.files)} sources in {secs:.1f}s", flush=True)
     threading.Thread(target=STORE.scan_loop, args=(done,), daemon=True).start()
     if BUDGET:

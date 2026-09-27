@@ -2,8 +2,13 @@
 # <xbar.title>Tokenmeter</xbar.title>
 # <xbar.desc>Today's AI coding spend from the local Tokenmeter server.</xbar.desc>
 # <swiftbar.hideAbout>true</swiftbar.hideAbout>
-PORT="${TOKENMETER_PORT:-7788}"
-S=$(curl -sf --max-time 2 "http://127.0.0.1:$PORT/api/summary") || { echo "◔ off"; echo "---"; echo "Tokenmeter is not running | bash=tokenmeter param1=--open terminal=false"; exit 0; }
+SAVED=$(python3 -c 'import json,os; print(json.load(open(os.path.expanduser("~/.tokenmeter/config.json"))).get("_port", ""))' 2>/dev/null)
+BASE="${TOKENMETER_PORT:-${SAVED:-7788}}"
+S=""
+for PORT in $(seq "$BASE" $((BASE + 10))); do
+  S=$(curl -sf --max-time 1 "http://127.0.0.1:$PORT/api/summary") && break
+done
+[ -n "$S" ] || { echo "◔ off"; echo "---"; echo "Tokenmeter is not running | bash=tokenmeter param1=start terminal=false"; exit 0; }
 echo "$S" | python3 -c '
 import sys, json
 s = json.load(sys.stdin)
