@@ -10,12 +10,10 @@ A local web dashboard showing token usage, cost, cache misses and rate-limit win
 
 | Path | Remote | Visibility | Role |
 |---|---|---|---|
-| `~/repo/tokenmeter` | `serkankorkut/tokenmeter` | private | the app, this repo |
+| `~/repo/tokenmeter` | `serkankorkut/tokenmeter` | public | the app, this repo |
 | `~/repo/homebrew-tap` | `serkankorkut/homebrew-tap` | public | Homebrew formula, public README, demo GIF, release tarballs |
-| `~/repo/tokenmeter-site` | `serkankorkut/tokenmeter-site` | private | marketing and docs site, live at tokenmeter.fyi |
+| `~/repo/tokenmeter-site` | `serkankorkut/tokenmeter-site` | public | marketing and docs site, live at tokenmeter.fyi |
 | `~/repo/serkan.fyi` | private | | owner's personal site; tokenmeter-site copies its build setup and style |
-
-Because this repo is private, anything the public must see (README image, install docs) lives in or points at the public tap repo. The PyPI README image URL is `https://raw.githubusercontent.com/serkankorkut/homebrew-tap/main/docs/demo.gif` for that reason. Do not link the private repo from public surfaces expecting it to load.
 
 ## Layout of this repo
 
@@ -57,7 +55,7 @@ Spend tile rule, owner's explicit request: if `_plans` has a nonzero price for t
 
 ## Configuration
 
-`~/.tokenmeter/config.json` is merged over the bundled `pricing.json` at startup: dict values merge one level deep, others replace. This machine has `{"_plans": {"claude": 100, "codex": 20}}`. Do not put personal plan values back into the bundled file.
+`~/.tokenmeter/config.json` is merged over the bundled `pricing.json` at startup: dict values merge one level deep, others replace. Do not put personal plan values back into the bundled file.
 
 ## Release process
 
@@ -99,13 +97,11 @@ Then capture with headless Chrome against port 7801 (`--window-size=1280,860`, `
 
 ## Known gaps
 
-- Claude plan limit percentage: Anthropic does not write it to disk. The server tries the OAuth usage endpoint with a keychain token on macOS; on this machine the token is empty, so the card shows rolling 5-hour and 7-day totals.
+- Claude plan limit percentage: Anthropic does not write it to disk. The server tries the OAuth usage endpoint with a keychain token on macOS. Without a token the card shows rolling 5-hour and 7-day totals.
 - Windows is expected to work but has not been run. Budget notifications use `osascript` and are macOS only.
 - Model prices: `claude-opus-5-5` was added on 2026-09-27 at $4 input, $5 / $8 cache writes, $0.20 cache read, $20 output. Before that it silently matched the `claude-opus-5` prefix and was overpriced by about 25 percent. When a new model id appears, add its exact prefix; do not rely on a shorter prefix matching.
 - The menu bar script is not in the PyPI package, so public users cannot get it.
 - Committed on main but not yet released (PyPI and Homebrew still serve 0.2.2): background indexing and silent handling of closed connections (fixes the Broken pipe tracebacks a user reported on 0.2.2), the `uvx` command fix in `README.md`, the dashboard's Report an issue and Contact buttons, `app_version` in `/api/usage` and `/api/health`, Opus 5.5 pricing, wrapping table headers so Cost stays visible in half-width tables, `release/demo_data.py`, the clean `docs/demo.gif`, and the tap homepage URL in `release/brew-formula.sh`. Also GPT-6 Sol and Luna prices and per-turn OpenAI long-context rates (the `long` block in pricing.json, applied above 272K input tokens). They reach users only with the next tagged release.
-- `tokenmeter-site` is in the private repo `serkankorkut/tokenmeter-site`. Preview with `npm run dev` (it may need `--port 8790 --inspector-port 9239` if another wrangler instance holds the defaults).
-- The main repo is private. Making it public would let the README, `git clone` instructions and the plugin marketplace work for others.
 
 ## Local processes that may be running
 
