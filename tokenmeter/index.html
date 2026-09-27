@@ -76,14 +76,14 @@ svg.chart rect.hit { fill: transparent; }
 .mixlist i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; margin-right: 6px; vertical-align: -1px; }
 table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; font-size: 13px; }
 th, td { text-align: left; padding: 8px 8px; border-bottom: 1px solid var(--line-soft); white-space: nowrap; }
-th { font-weight: 500; color: var(--text-2); font-size: 12px; cursor: pointer; user-select: none; position: sticky; top: 0; background: var(--surface); z-index: 2; }
+th { font-weight: 500; color: var(--text-2); font-size: 12px; cursor: pointer; user-select: none; position: sticky; top: 0; background: var(--surface); z-index: 2; white-space: normal; vertical-align: bottom; }
 th:hover { z-index: 3; }
 th:hover, th.on { color: var(--text); }
 .info { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 14px; height: 14px; border-radius: 50%; border: 1px solid var(--text-3); color: var(--text-3); font-size: 10px; font-style: italic; font-family: Georgia, serif; vertical-align: 1px; cursor: help; }
 .info::after { content: attr(data-tip); position: absolute; right: -4px; top: calc(100% + 8px); width: 280px; white-space: normal; text-align: left; background: var(--text); color: var(--bg); padding: 9px 11px; border-radius: 8px; font: 12px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-style: normal; font-weight: 400; opacity: 0; pointer-events: none; z-index: 30; transition: opacity .1s; }
 .info:hover::after, .info:focus::after { opacity: 1; }
 th:hover .info { color: var(--text); border-color: var(--text); }
-th .muted { font-weight: 400; }
+th .muted { font-weight: 400; display: block; font-size: 10.5px; line-height: 1.2; white-space: normal; max-width: 120px; margin-left: auto; }
 td.n, th.n { text-align: right; }
 td.mono, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
 .tool { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 7px; vertical-align: 1px; }
@@ -100,6 +100,10 @@ td.commit { max-width: 180px; } td.repo { max-width: 110px; }
 .scroll { overflow: auto; max-height: 420px; padding-bottom: 2px; }
 .scroll table { position: relative; }
 .muted { color: var(--text-3); font-size: 12px; }
+.feedback { margin-top: 20px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 13px; color: var(--text-2); }
+.feedback span { margin-right: auto; }
+.btn.primary { background: var(--text); color: var(--bg); border-color: var(--text); }
+.btn.primary:hover { background: var(--claude); border-color: var(--claude); }
 footer { margin-top: 20px; color: var(--text-3); font-size: 12px; display: flex; gap: 16px; flex-wrap: wrap; }
 .empty { padding: 30px; text-align: center; color: var(--text-3); white-space: normal; }
 .hide { display: none !important; }
@@ -138,6 +142,7 @@ footer { margin-top: 20px; color: var(--text-3); font-size: 12px; display: flex;
   </div>
 </header>
 
+<div class="notice hide" id="indexing"></div>
 <div class="notice hide" id="firstRun">No transcripts found yet. Tokenmeter reads <code id="frClaude"></code>, <code id="frCodex"></code> and <code id="frCopilot"></code>. Send one prompt in Claude Code, Codex or Copilot CLI and it will appear here within a few seconds. If your logs live elsewhere, set <code>CLAUDE_CONFIG_DIR</code>, <code>CODEX_HOME</code> or <code>COPILOT_DB</code> before starting the server.</div>
 <div class="notice alert hide" id="alerts"></div>
 <div class="notice hide" id="unpriced"></div>
@@ -145,7 +150,7 @@ footer { margin-top: 20px; color: var(--text-3); font-size: 12px; display: flex;
 <details class="notice" id="howCost" style="margin-bottom:14px"><summary style="cursor:pointer;font-weight:600;color:var(--text)">How cost is calculated</summary>
 <p style="margin:10px 0 6px">Every model reply reports how many tokens of each type it used. Tokenmeter multiplies each type by that model's list price and adds them up:</p>
 <p style="margin:0 0 10px;font-family:ui-monospace,Menlo,monospace;font-size:12px">cost = cached reads × read price + uncached input × input price + cache writes × write price + output × output price, all per million tokens</p>
-<p style="margin:0 0 10px">The types are priced very differently, so the token total alone does not predict cost. On Claude a cached read is about 2% of a fresh token, and output is 2 to 5 times a fresh token. Claude Code writes its cache with the 1-hour rate. OpenAI models do not charge for cache writes. The rates in use right now:</p>
+<p style="margin:0 0 10px">The types are priced very differently, so the token total alone does not predict cost. On Claude a cached read is about 2% of a fresh token, and output is 2 to 5 times a fresh token. Claude Code writes its cache with the 1-hour rate. OpenAI models do not charge for cache writes, and bill higher rates for any turn with more than 272K input tokens; Tokenmeter applies that per turn. The rates in use right now:</p>
 <div class="scroll" style="max-height:240px"><table id="rateTable"></table></div>
 <p class="muted" style="margin:10px 0 0">These are API list prices from <code>pricing.json</code>. If you are on a subscription you pay the plan price instead; the Spend tile shows that first and this API-equivalent figure below it.</p>
 </details>
@@ -208,7 +213,12 @@ footer { margin-top: 20px; color: var(--text-3); font-size: 12px; display: flex;
   <div class="scroll"><table id="feed"></table></div>
 </div>
 
-<footer><span id="srcClaude"></span><span id="srcCodex"></span><span id="srcCopilot"></span><span id="scanned"></span></footer>
+<div class="feedback">
+  <span>Something wrong, or an idea?</span>
+  <a class="btn primary" id="issueBtn" href="https://github.com/serkankorkut/homebrew-tap/issues/new/choose" target="_blank" rel="noopener">Report an issue</a>
+  <a class="btn" id="contactBtn" href="mailto:korkutserkan@outlook.com?subject=Tokenmeter">Contact</a>
+</div>
+<footer><span id="appVersion"></span><span id="srcClaude"></span><span id="srcCodex"></span><span id="srcCopilot"></span><span id="scanned"></span></footer>
 </div>
 
 <script>
@@ -227,6 +237,7 @@ const when = ts => new Date(ts).toLocaleString(undefined, { month: 'short', day:
 const toolDot = t => `<span class="tool" style="background:var(--${t})"></span>${TOOLS[t] || t}`;
 const prefixLookup = (table, key) => { let best = null; for (const k in table) if (key.startsWith(k) && (!best || k.length > best.length)) best = k; return best ? table[best] : null; };
 const sum = (arr, f) => arr.reduce((a, r) => a + (f(r) || 0), 0);
+const rateFor = r => { const p = state.data.pricing[r.model]; if (!p || !p.long || r.in + r.cr + r.cw5 + r.cw1h <= p.long.above) return p; const { above, ...l } = p.long; return { ...p, ...l }; };
 
 function bounds() {
   const now = new Date();
@@ -249,7 +260,7 @@ function attribute(recs, prompts) {
     let g = null; for (const x of list) { if (x.p.ts <= r.ts) g = x; else break; }
     if (!g) continue;
     g.turns++; g.tokens += total(r); g.cr += r.cr; g.fresh += r.in + r.cw5 + r.cw1h; g.out += r.out; g.cost += r.cost || 0; if (r.cost == null) g.priced = false; if (r.ts > g.last) g.last = r.ts; owner.set(r, g); g.models.add(r.model);
-    const q = state.data.pricing[r.model]; if (q) { g.crCost += r.cr * q.cache_read / 1e6; g.freshCost += (r.in * q.input + r.cw5 * q.cache_write_5m + r.cw1h * q.cache_write_1h) / 1e6; g.outCost += r.out * q.output / 1e6; }
+    const q = rateFor(r); if (q) { g.crCost += r.cr * q.cache_read / 1e6; g.freshCost += (r.in * q.input + r.cw5 * q.cache_write_5m + r.cw1h * q.cache_write_1h) / 1e6; g.outCost += r.out * q.output / 1e6; }
   }
   const groups = [...bySession.values()].flat().map(g => Object.assign(g, { dur: new Date(g.last) - new Date(g.p.ts), text: g.p.text || '', ts: g.p.ts, tool: g.p.tool, project: g.p.project }));
   return { groups, owner };
@@ -461,8 +472,8 @@ function renderChart(recs, prompts, b) {
 
 function renderMix(recs) {
   const P = state.data.pricing;
-  const priced = recs.filter(r => P[r.model]);
-  const parts = [['Input', r => r.in, r => r.in * P[r.model].input, 'var(--mix-1)'], ['Cache read', r => r.cr, r => r.cr * P[r.model].cache_read, 'var(--mix-2)'], ['Cache write', r => r.cw5 + r.cw1h, r => r.cw5 * P[r.model].cache_write_5m + r.cw1h * P[r.model].cache_write_1h, 'var(--mix-3)'], ['Output', r => r.out, r => r.out * P[r.model].output, 'var(--mix-4)']]
+  const priced = recs.filter(r => rateFor(r));
+  const parts = [['Input', r => r.in, r => r.in * rateFor(r).input, 'var(--mix-1)'], ['Cache read', r => r.cr, r => r.cr * rateFor(r).cache_read, 'var(--mix-2)'], ['Cache write', r => r.cw5 + r.cw1h, r => r.cw5 * rateFor(r).cache_write_5m + r.cw1h * rateFor(r).cache_write_1h, 'var(--mix-3)'], ['Output', r => r.out, r => r.out * rateFor(r).output, 'var(--mix-4)']]
     .map(([name, f, g, c]) => ({ name, c, v: sum(recs, f), usd: sum(priced, g) / 1e6 }));
   const bar = (id, listId, key, fmtV) => {
     const t = Math.max(1e-9, sum(parts, p => p[key]));
@@ -484,8 +495,8 @@ const promptCols = () => [
   { k: 'dur', label: 'Took', n: 1, fmt: ms => ms < 1000 ? '' : ms < 60000 ? Math.round(ms / 1000) + 's' : Math.round(ms / 60000) + 'm' },
 ];
 const resumeCmd = p => ({ claude: `claude --resume ${p.session}`, codex: `codex resume ${p.session}`, copilot: `copilot --resume ${p.session}` })[p.tool];
-const rate = (g, key) => { const ms = [...g.models].map(m => state.data.pricing[m]).filter(Boolean); if (!ms.length) return ''; const v = [...new Set(ms.map(q => key === 'fresh' ? `$${q.cache_write_1h}` : `$${q[key]}`))]; return v.length === 1 ? `× ${v[0]}/M` : '× mixed rates'; };
-const costMath = g => g.priced && g.cost ? `<div class="muted" style="margin-top:8px"><b>How this cost was calculated:</b> cached ${fmt(g.cr)} ${rate(g, 'cache_read')} = ${usd(g.crCost)} · fresh ${fmt(g.fresh)} ${rate(g, 'fresh')} = ${usd(g.freshCost)} · output ${fmt(g.out)} ${rate(g, 'output')} = ${usd(g.outCost)} · <b>total ${usd(g.cost)}</b> on ${esc([...g.models].join(', '))}${g.fresh && [...g.models].some(m => m.startsWith('claude')) ? '. Fresh uses the 1-hour cache write rate that Claude Code uses; the few uncached input tokens are priced at the input rate.' : ''}</div>` : '';
+const rate = (tokens, usd) => tokens && usd ? `× $${+(usd / tokens * 1e6).toFixed(usd / tokens * 1e6 >= 1 ? 2 : 3)}/M` : '';
+const costMath = g => g.priced && g.cost ? `<div class="muted" style="margin-top:8px"><b>How this cost was calculated:</b> cached ${fmt(g.cr)} ${rate(g.cr, g.crCost)} = ${usd(g.crCost)} · fresh ${fmt(g.fresh)} ${rate(g.fresh, g.freshCost)} = ${usd(g.freshCost)} · output ${fmt(g.out)} ${rate(g.out, g.outCost)} = ${usd(g.outCost)} · <b>total ${usd(g.cost)}</b> on ${esc([...g.models].join(', '))}${g.fresh && [...g.models].some(m => m.startsWith('claude')) ? '. Rates shown are the effective average for this prompt. Fresh uses the 1-hour cache write rate that Claude Code uses; the few uncached input tokens are priced at the input rate.' : ''}</div>` : '';
 const promptExtra = cols => g => `<tr class="pfull ${state.open.has(g.p.id) ? '' : 'hide'}"><td colspan="${cols}"><div class="full">${esc(g.text) || '<span class="muted">No plain-text prompt was recorded for this turn.</span>'}</div>${costMath(g)}<div class="muted" style="margin-top:8px">Resume this session: <code>${esc(resumeCmd(g.p))}</code> · prompt id <code>${esc(g.p.id)}</code>${g.p.user !== state.data.me ? ` · by <b>${esc(g.p.user)}</b>` : ''}</div></td></tr>`;
 function wireExpand(id, rows) {
   $(id).querySelectorAll('tr.prow').forEach((tr, i) => tr.onclick = () => {
@@ -508,7 +519,7 @@ function renderMisses(recs, owner) {
     for (let i = 1; i < list.length; i++) {
       const prev = list[i - 1], r = list[i], cw = r.cw5 + r.cw1h;
       if (prev.cr > 50000 && r.cr < prev.cr * 0.5 && cw > 20000) {
-        const p = P[r.model], g = owner.get(r);
+        const p = rateFor(r), g = owner.get(r);
         misses.push({ ts: r.ts, tool: r.tool, lost: prev.cr - r.cr, rewritten: cw, cost: p ? (r.cw5 * p.cache_write_5m + r.cw1h * p.cache_write_1h) / 1e6 : 0, priced: !!p, text: g ? g.text : '', project: r.project, p: g && g.p, g });
       }
     }
@@ -556,6 +567,11 @@ function fillSelects() {
 async function load() {
   try {
     const v = await (await fetch('/api/version')).json();
+    $('indexing').classList.toggle('hide', !v.indexing);
+    if (v.indexing) {
+      $('indexing').innerHTML = `<b>Indexing your transcripts</b> · ${v.done.toLocaleString()} of ${v.total.toLocaleString()} files. The dashboard fills in when this finishes; large histories can take a minute the first time.`;
+      return setLive(true);
+    }
     if (v.version === state.version) return setLive(true);
     const d = await (await fetch('/api/usage')).json();
     state.data = d; state.version = d.version;
@@ -567,6 +583,9 @@ async function load() {
     $('srcCodex').innerHTML = `Codex: <code>${esc(d.sources.codex)}/sessions</code>`;
     $('srcCopilot').innerHTML = `Copilot: <code>${esc(d.sources.copilot)}</code>`;
     $('scanned').textContent = `${d.records.length.toLocaleString()} turns indexed · updated ${new Date(d.generated * 1000).toLocaleTimeString()}`;
+    $('appVersion').textContent = `tokenmeter ${d.app_version}`;
+    $('issueBtn').href = `https://github.com/serkankorkut/homebrew-tap/issues/new?template=bug.yml&version=${encodeURIComponent('tokenmeter ' + d.app_version)}`;
+    $('contactBtn').href = `mailto:korkutserkan@outlook.com?subject=${encodeURIComponent('Tokenmeter ' + d.app_version)}`;
     setLive(true);
   } catch (e) { setLive(false); }
 }
@@ -596,7 +615,7 @@ $('theme').onclick = () => applyTheme(document.documentElement.dataset.theme ===
 let saved = null; try { saved = localStorage.getItem('tm-theme'); } catch (e) {}
 applyTheme(saved || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
 addEventListener('resize', () => state.data && render());
-readHash(); load(); setInterval(load, 4000);
+readHash(); load(); setInterval(load, 3000);
 </script>
 </body>
 </html>

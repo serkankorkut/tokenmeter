@@ -44,7 +44,7 @@ pipx install tokenmeter-dashboard
 ```
 
 ```bash
-uvx tokenmeter-dashboard
+uvx --from tokenmeter-dashboard tokenmeter --open
 ```
 
 Or, as a Claude Code plugin straight from GitHub:

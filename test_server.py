@@ -70,4 +70,10 @@ assert server.longest_prefix(server.CONTEXT_WINDOWS, "claude-haiku-4-5") == 2000
 assert server.price_for("claude-haiku-4-5-20251001")["output"] == 5
 assert server.price_for("claude-fable-5-1")["cache_read"] == 0.25
 assert server.price_for("claude-fable-5")["cache_read"] == 1
+assert server.price_for("claude-opus-5-5")["output"] == 20 and server.price_for("claude-opus-5")["output"] == 25
+short = server.rec("t", "codex", "gpt-6-sol", "/p", "s", 1000, 100000, 0, 0, 1000, 0)
+long = server.rec("t", "codex", "gpt-6-sol", "/p", "s", 1000, 300000, 0, 0, 1000, 0)
+assert abs(server.cost_of(short) - (1000 * 2 + 100000 * 0.2 + 1000 * 10) / 1e6) < 1e-9, server.cost_of(short)
+assert abs(server.cost_of(long) - (1000 * 4 + 300000 * 0.4 + 1000 * 15) / 1e6) < 1e-9, server.cost_of(long)
+assert server.price_for("gpt-6-luna")["output"] == 0.5 and server.price_for("gpt-6-astra-2026")["input"] == 10
 print("ok")

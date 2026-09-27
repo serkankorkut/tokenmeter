@@ -60,8 +60,15 @@ def price_for(model):
     return longest_prefix(PRICING, model)
 
 
-def cost_of(rec):
+def rates_for(rec):
     p = price_for(rec["model"])
+    if p and p.get("long") and rec["in"] + rec["cr"] + rec["cw5"] + rec["cw1h"] > p["long"]["above"]:
+        return dict(p, **{k: v for k, v in p["long"].items() if k != "above"})
+    return p
+
+
+def cost_of(rec):
+    p = rates_for(rec)
     if not p:
         return None
     usd = rec["in"] * p["input"] + rec["cr"] * p["cache_read"] + rec["out"] * p["output"]
@@ -90,7 +97,7 @@ def parse_claude(path):
     by_msg, prompts = {}, {}
     with open(path, "rb") as f:
         for raw in f:
-            if b'"usage"' not in raw and b'"promptId"' not in raw:
+            if b'"usage"' not in raw and (b'"promptId"' not in raw or b'"tool_result"' in raw):
                 continue
             try:
                 d = json.loads(raw)
@@ -193,6 +200,10 @@ class Store:
         self.alerts = []
         self._claude_limits = (0, None)
         self._commits = {}
+        self.indexing = True
+        self.progress = (0, 0)
+        self._usage = ("", b"")
+        self._usage_lock = threading.Lock()
 
     def sources(self):
         for path in glob.glob(os.path.join(CLAUDE_DIR, "projects", "**", "*.jsonl"), recursive=True):
@@ -205,30 +216,53 @@ class Store:
             yield path, parse_team
 
     def scan(self):
-        with self.lock:
-            seen = set()
-            h = hashlib.md5()
-            for path, parser in self.sources():
+        sources = list(self.sources())
+        seen = set()
+        h = hashlib.md5()
+        for i, (path, parser) in enumerate(sources):
+            self.progress = (i, len(sources))
+            try:
+                st = os.stat(path)
+            except OSError:
+                continue
+            seen.add(path)
+            key = (st.st_mtime, st.st_size)
+            h.update(f"{path}{key}".encode())
+            if self.files.get(path, (None,))[0] != key:
                 try:
-                    st = os.stat(path)
-                except OSError:
+                    recs, prompts, meta = parser(path)
+                except (OSError, sqlite3.Error, ValueError, KeyError):
                     continue
-                seen.add(path)
-                key = (st.st_mtime, st.st_size)
-                h.update(f"{path}{key}".encode())
-                if self.files.get(path, (None,))[0] != key:
-                    try:
-                        recs, prompts, meta = parser(path)
-                    except (OSError, sqlite3.Error, ValueError, KeyError):
-                        continue
-                    recs = [r for r in recs if r["ts"]]
-                    for r in recs:
-                        r["cost"] = cost_of(r)
+                recs = [r for r in recs if r["ts"]]
+                for r in recs:
+                    r["cost"] = cost_of(r)
+                with self.lock:
                     self.files[path] = (key, recs, prompts, meta)
+        with self.lock:
             for gone in set(self.files) - seen:
                 del self.files[gone]
-            self.version = h.hexdigest()[:12]
-            self.scanned_at = time.time()
+        self.progress = (len(sources), len(sources))
+        self.version = h.hexdigest()[:12]
+        self.scanned_at = time.time()
+        self.indexing = False
+
+    def scan_loop(self, on_first=None):
+        t0 = time.time()
+        while True:
+            try:
+                self.scan()
+            except Exception as e:
+                print(f"tokenmeter: scan failed: {e}", file=sys.stderr, flush=True)
+            if on_first:
+                on_first(time.time() - t0)
+                on_first = None
+            time.sleep(3)
+
+    def usage_json(self):
+        with self._usage_lock:
+            if self._usage[0] != self.version:
+                self._usage = (self.version, json.dumps(self.snapshot(), separators=(",", ":")).encode())
+            return self._usage[1]
 
     def records(self):
         with self.lock:
@@ -240,7 +274,6 @@ class Store:
         return recs, prompts, metas
 
     def snapshot(self):
-        self.scan()
         recs, prompts, metas = self.records()
         codex_limits = max((m["limits"] for m in metas if m.get("limits")), key=lambda l: l["ts"] or "", default=None)
         ctx = dict(CONTEXT_WINDOWS)
@@ -249,6 +282,7 @@ class Store:
                 ctx["codex"] = m["ctx"]
         return {
             "version": self.version,
+            "app_version": __version__,
             "generated": self.scanned_at,
             "records": recs,
             "prompts": prompts,
@@ -345,7 +379,6 @@ def budget_loop():
     notified = set()
     while True:
         try:
-            STORE.scan()
             s = STORE.summary()
             day = dt.date.today().isoformat()
             if BUDGET.get("daily") and s["today"]["cost"] > BUDGET["daily"] and ("d", day) not in notified:
@@ -362,7 +395,6 @@ def budget_loop():
 def export_loop(url):
     while True:
         try:
-            STORE.scan()
             recs, prompts, _ = STORE.records()
             since = (dt.datetime.now(dt.timezone.utc) - dt.timedelta(days=30)).strftime("%Y-%m-%dT%H:%M:%S")
             payload = {"user": USER, "records": [r for r in recs if r["ts"] >= since and r["user"] == USER],
@@ -393,27 +425,30 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         try:
             self.route(urlparse(self.path))
+        except (BrokenPipeError, ConnectionResetError, ConnectionAbortedError):
+            self.close_connection = True
         except Exception:
             err = traceback.format_exc()
             print(f"tokenmeter: error serving {self.path}\n{err}", file=sys.stderr, flush=True)
-            self.send(json.dumps({"error": err.strip().splitlines()[-1], "path": self.path}), status=500)
+            try:
+                self.send(json.dumps({"error": err.strip().splitlines()[-1], "path": self.path}), status=500)
+            except OSError:
+                self.close_connection = True
 
     def route(self, url):
         if url.path == "/":
             with open(os.path.join(HERE, "index.html"), "rb") as f:
                 return self.send(f.read(), "text/html; charset=utf-8")
         if url.path == "/api/health":
-            return self.send(json.dumps({"ok": True, "app": "tokenmeter", "user": USER}))
+            return self.send(json.dumps({"ok": True, "app": "tokenmeter", "version": __version__, "user": USER}))
         if url.path == "/api/version":
-            STORE.scan()
-            return self.send(json.dumps({"version": STORE.version}))
+            done, total = STORE.progress
+            return self.send(json.dumps({"version": STORE.version, "indexing": STORE.indexing, "done": done, "total": total}))
         if url.path == "/api/usage":
-            return self.send(json.dumps(STORE.snapshot(), separators=(",", ":")))
+            return self.send(STORE.usage_json())
         if url.path == "/api/summary":
-            STORE.scan()
             return self.send(json.dumps(STORE.summary()))
         if url.path == "/api/commits":
-            STORE.scan()
             return self.send(json.dumps(STORE.commits(), separators=(",", ":")))
         if url.path == "/api/export.csv":
             since = parse_qs(url.query).get("since", [""])[0]
@@ -479,10 +514,10 @@ def main():
             webbrowser.open(url)
         return
     server = ThreadingHTTPServer((host, port), Handler)
-    t0 = time.time()
-    STORE.scan()
-    print(f"tokenmeter: indexed {len(STORE.records()[0])} turns from {len(STORE.files)} sources in {time.time() - t0:.1f}s")
-    print(f"tokenmeter: serving {url}" + (f" (bound to {host})" if host != "127.0.0.1" else ""), flush=True)
+    server.daemon_threads = True
+    print(f"tokenmeter: serving {url}" + (f" (bound to {host})" if host != "127.0.0.1" else "") + ", indexing in the background", flush=True)
+    done = lambda secs: print(f"tokenmeter: indexed {len(STORE.records()[0])} turns from {len(STORE.files)} sources in {secs:.1f}s", flush=True)
+    threading.Thread(target=STORE.scan_loop, args=(done,), daemon=True).start()
     if BUDGET:
         threading.Thread(target=budget_loop, daemon=True).start()
     if arg("--export"):
