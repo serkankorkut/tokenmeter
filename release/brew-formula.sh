@@ -38,18 +38,11 @@ class Tokenmeter < Formula
       Start Tokenmeter and open your dashboard in the browser:
         tokenmeter start
 
-      Your dashboard lives at http://127.0.0.1:7788
       It keeps running in the background and starts again at login.
-      Stop it any time with: tokenmeter stop
-      After an upgrade, run tokenmeter start again to switch to the new version.
-    EOS
-  end
+      After an upgrade, run tokenmeter start again. Stop it with: tokenmeter stop
 
-  service do
-    run [opt_bin/"tokenmeter"]
-    keep_alive true
-    log_path var/"log/tokenmeter.log"
-    error_log_path var/"log/tokenmeter.log"
+      Your dashboard: http://127.0.0.1:7788
+    EOS
   end
 
   test do

@@ -67,7 +67,7 @@ Then start it:
 tokenmeter start
 ```
 
-It runs in the background, opens http://127.0.0.1:7788, and with Homebrew it starts again at login. `tokenmeter stop` stops it; plain `tokenmeter` runs it in the terminal instead. Inside Claude Code or Codex, `/tokenmeter` does the same.
+It runs in the background, opens http://127.0.0.1:7788, and starts again at login (a launchd agent on macOS, a systemd user service on Linux). `tokenmeter stop` stops it; plain `tokenmeter` runs it in the terminal instead. Inside Claude Code or Codex, `/tokenmeter` does the same.
 
 ## Configuration
 

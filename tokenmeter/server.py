@@ -7,7 +7,9 @@ import hashlib
 import io
 import json
 import os
+import plistlib
 import re
+import shlex
 import shutil
 import socket
 import sqlite3
@@ -21,7 +23,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 from urllib.request import Request, urlopen
 
-__version__ = "0.2.5"
+__version__ = "0.2.6"
 HERE = os.path.dirname(os.path.abspath(__file__))
 HOME = os.path.expanduser("~")
 CLAUDE_DIR = os.environ.get("CLAUDE_CONFIG_DIR", os.path.join(HOME, ".claude"))
@@ -545,61 +547,144 @@ def save_port(port):
         json.dump(cfg, f, indent=2)
 
 
-def brew_bin():
-    return shutil.which("brew") if "/Cellar/tokenmeter/" in HERE else None
+LABEL = "fyi.tokenmeter"
+LEGACY_LABELS = ("sh.brew.tokenmeter", "homebrew.mxcl.tokenmeter")
+AGENTS_DIR = os.path.join(HOME, "Library", "LaunchAgents")
+UNIT = os.path.join(HOME, ".config", "systemd", "user", "tokenmeter.service")
+LOG = os.path.join(DATA_DIR, "server.log")
+PASS_ENV = ("CLAUDE_CONFIG_DIR", "CODEX_HOME", "COPILOT_DB", "TOKENMETER_DIR", "TOKENMETER_TOKEN")
+
+
+def program():
+    if "/Cellar/tokenmeter/" in HERE:
+        opt = HERE.split("/Cellar/")[0] + "/opt/tokenmeter/bin/tokenmeter"
+        if os.path.exists(opt):
+            return [opt]
+    return [sys.executable, os.path.join(HERE, "server.py")]
+
+
+def run(*cmd):
+    try:
+        return subprocess.run(cmd, capture_output=True).returncode == 0
+    except OSError:
+        return False
+
+
+def launchd(cmd):
+    uid = os.getuid()
+    for label in LEGACY_LABELS + (LABEL,):
+        run("launchctl", "bootout", f"gui/{uid}/{label}")
+    for label in LEGACY_LABELS:
+        legacy = os.path.join(AGENTS_DIR, label + ".plist")
+        if os.path.exists(legacy):
+            os.remove(legacy)
+    plist = os.path.join(AGENTS_DIR, LABEL + ".plist")
+    if cmd == "stop":
+        if os.path.exists(plist):
+            os.remove(plist)
+        return True
+    prog = program()
+    os.makedirs(AGENTS_DIR, exist_ok=True)
+    job = {"Label": LABEL, "ProgramArguments": prog, "RunAtLoad": True, "KeepAlive": {"PathState": {prog[-1]: True}}, "StandardOutPath": LOG, "StandardErrorPath": LOG}
+    env = {k: os.environ[k] for k in PASS_ENV if os.environ.get(k)}
+    if env:
+        job["EnvironmentVariables"] = env
+    with open(plist, "wb") as f:
+        plistlib.dump(job, f)
+    if run("launchctl", "bootstrap", f"gui/{uid}", plist):
+        return True
+    os.remove(plist)
+    return False
+
+
+def systemd(cmd):
+    if not shutil.which("systemctl"):
+        return False
+    if cmd == "stop":
+        run("systemctl", "--user", "disable", "--now", "tokenmeter")
+        if os.path.exists(UNIT):
+            os.remove(UNIT)
+            run("systemctl", "--user", "daemon-reload")
+        return True
+    os.makedirs(os.path.dirname(UNIT), exist_ok=True)
+    env = "".join(f"Environment={k}={shlex.quote(os.environ[k])}\n" for k in PASS_ENV if os.environ.get(k))
+    with open(UNIT, "w") as f:
+        f.write(f"[Unit]\nDescription=Tokenmeter dashboard\n\n[Service]\nExecStart={shlex.join(program())}\nRestart=always\n{env}\n[Install]\nWantedBy=default.target\n")
+    if run("systemctl", "--user", "daemon-reload") and run("systemctl", "--user", "enable", "tokenmeter") and run("systemctl", "--user", "restart", "tokenmeter"):
+        return True
+    os.remove(UNIT)
+    return False
+
+
+def service(cmd):
+    if sys.platform == "darwin":
+        return launchd(cmd)
+    if sys.platform.startswith("linux"):
+        return systemd(cmd)
+    return False
+
+
+def service_installed():
+    return os.path.exists(os.path.join(AGENTS_DIR, LABEL + ".plist")) or os.path.exists(UNIT)
+
+
+def stop_all(ports):
+    service("stop")
+    for p in sorted(set(ports) | set(range(PORT, PORT + PORT_SPAN + 1))):
+        h = health(p)
+        if h:
+            try:
+                os.kill(h["pid"], 15)
+            except OSError:
+                pass
+    for p in ports:
+        for _ in range(40):
+            if not health(p):
+                break
+            time.sleep(0.25)
 
 
 def control(cmd, port_arg):
     ports = ports_to_try(port_arg)
-    brew = brew_bin()
     if cmd == "stop":
-        if brew:
-            subprocess.run([brew, "services", "stop", "tokenmeter"], stdout=subprocess.DEVNULL)
-        for p in sorted(set(ports) | set(range(PORT, PORT + PORT_SPAN + 1))):
-            h = health(p)
-            if h:
-                os.kill(h["pid"], 15)
+        stop_all(ports)
         print("tokenmeter stopped")
         return
     p, h = find_running(ports)
-    if p and h.get("version") != __version__:
-        print(f"tokenmeter: restarting the running {h.get('version', 'older')} dashboard on {__version__}")
-        if brew:
-            subprocess.run([brew, "services", "stop", "tokenmeter"], stdout=subprocess.DEVNULL)
-        if health(p):
-            os.kill(h["pid"], 15)
-        for _ in range(40):
-            if not taken(p):
-                break
-            time.sleep(0.25)
+    if p and (h.get("version") != __version__ or not service_installed()):
+        if h.get("version") != __version__:
+            print(f"tokenmeter: restarting the running {h.get('version', 'older')} dashboard on {__version__}")
+        stop_all(ports)
         p, h = None, None
+    elif not p:
+        stop_all(ports)
     if not p and not any(not taken(q) for q in ports):
         print(busy(ports), file=sys.stderr)
         sys.exit(1)
     if port_arg:
         save_port(int(port_arg))
         print(f"tokenmeter: saved port {port_arg} to {USER_CONFIG}")
+    login = service_installed()
     if not p:
-        if brew:
-            subprocess.run([brew, "services", "restart" if port_arg else "start", "tokenmeter"], stdout=subprocess.DEVNULL)
-        else:
+        login = service("start")
+        if not login:
             os.makedirs(DATA_DIR, exist_ok=True)
-            log = open(os.path.join(DATA_DIR, "server.log"), "a")
+            log = open(LOG, "a")
             flags = getattr(subprocess, "DETACHED_PROCESS", 0) | getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
-            subprocess.Popen([sys.executable, "-m", "tokenmeter"] + (["--port", str(port_arg)] if port_arg else []), stdout=log, stderr=log, stdin=subprocess.DEVNULL, start_new_session=True, creationflags=flags)
-        for _ in range(40):
+            subprocess.Popen(program() + (["--port", str(port_arg)] if port_arg else []), stdout=log, stderr=log, stdin=subprocess.DEVNULL, start_new_session=True, creationflags=flags)
+        for _ in range(60):
             p, h = find_running(ports)
             if p:
                 break
             time.sleep(0.25)
         else:
-            print(f"tokenmeter did not start. See {os.path.join(DATA_DIR, 'server.log')}", file=sys.stderr)
+            print(f"tokenmeter did not start. See {LOG}", file=sys.stderr)
             sys.exit(1)
     url = f"http://127.0.0.1:{p}"
     if p != ports[0]:
         print(f"\n  Port {ports[0]} is used by another app, so Tokenmeter is on {p}.")
-    print(f"\n  Tokenmeter is running. Your dashboard:\n\n    {url}\n")
-    print("  It keeps running in the background" + (" and starts again at login." if brew else ".") + " Stop it with: tokenmeter stop\n")
+    print("\n  Tokenmeter is running in the background" + (" and starts again at login." if login else ".") + "\n  Stop it with: tokenmeter stop\n")
+    print(f"  Your dashboard: {url}\n")
     webbrowser.open(url)
 
 
