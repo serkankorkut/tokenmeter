@@ -21,7 +21,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 from urllib.request import Request, urlopen
 
-__version__ = "0.2.4"
+__version__ = "0.2.5"
 HERE = os.path.dirname(os.path.abspath(__file__))
 HOME = os.path.expanduser("~")
 CLAUDE_DIR = os.environ.get("CLAUDE_CONFIG_DIR", os.path.join(HOME, ".claude"))
@@ -562,6 +562,17 @@ def control(cmd, port_arg):
         print("tokenmeter stopped")
         return
     p, h = find_running(ports)
+    if p and h.get("version") != __version__:
+        print(f"tokenmeter: restarting the running {h.get('version', 'older')} dashboard on {__version__}")
+        if brew:
+            subprocess.run([brew, "services", "stop", "tokenmeter"], stdout=subprocess.DEVNULL)
+        if health(p):
+            os.kill(h["pid"], 15)
+        for _ in range(40):
+            if not taken(p):
+                break
+            time.sleep(0.25)
+        p, h = None, None
     if not p and not any(not taken(q) for q in ports):
         print(busy(ports), file=sys.stderr)
         sys.exit(1)
@@ -625,6 +636,8 @@ The dashboard is at http://127.0.0.1:7788 unless that port was taken.""")
     port, running = find_running(ports)
     if running:
         print(f"tokenmeter already running at http://127.0.0.1:{port}")
+        if running.get("version") != __version__:
+            print(f"tokenmeter: that is version {running.get('version')}; run tokenmeter start to restart it on {__version__}")
         if "--open" in sys.argv:
             webbrowser.open(f"http://127.0.0.1:{port}")
         return

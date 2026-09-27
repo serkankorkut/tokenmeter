@@ -41,6 +41,7 @@ class Tokenmeter < Formula
       Your dashboard lives at http://127.0.0.1:7788
       It keeps running in the background and starts again at login.
       Stop it any time with: tokenmeter stop
+      After an upgrade, run tokenmeter start again to switch to the new version.
     EOS
   end
 
