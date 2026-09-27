@@ -1,4 +1,9 @@
-# Tokenmeter
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/serkankorkut/homebrew-tap/main/docs/logo-dark.png">
+    <img src="https://raw.githubusercontent.com/serkankorkut/homebrew-tap/main/docs/logo-light.png" alt="Tokenmeter" width="360">
+  </picture>
+</p>
 
 ![Tokenmeter demo](https://raw.githubusercontent.com/serkankorkut/homebrew-tap/main/docs/demo.gif)
 
