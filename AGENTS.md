@@ -12,7 +12,7 @@ A local web dashboard showing token usage, cost, cache misses and rate-limit win
 |---|---|---|---|
 | `~/repo/tokenmeter` | `serkankorkut/tokenmeter` | private | the app, this repo |
 | `~/repo/homebrew-tap` | `serkankorkut/homebrew-tap` | public | Homebrew formula, public README, demo GIF, release tarballs |
-| `~/repo/tokenmeter-site` | none, not a git repo yet | local | marketing and docs site for Cloudflare Workers |
+| `~/repo/tokenmeter-site` | `serkankorkut/tokenmeter-site` | private | marketing and docs site, live at tokenmeter.fyi |
 | `~/repo/serkan.fyi` | private | | owner's personal site; tokenmeter-site copies its build setup and style |
 
 Because this repo is private, anything the public must see (README image, install docs) lives in or points at the public tap repo. The PyPI README image URL is `https://raw.githubusercontent.com/serkankorkut/homebrew-tap/main/docs/demo.gif` for that reason. Do not link the private repo from public surfaces expecting it to load.
@@ -101,8 +101,8 @@ Then capture with headless Chrome against port 7801 (`--window-size=1280,860`, `
 - Windows is expected to work but has not been run. Budget notifications use `osascript` and are macOS only.
 - Model prices: `claude-opus-5-5` was added on 2026-09-27 at $4 input, $5 / $8 cache writes, $0.20 cache read, $20 output. Before that it silently matched the `claude-opus-5` prefix and was overpriced by about 25 percent. When a new model id appears, add its exact prefix; do not rely on a shorter prefix matching.
 - The menu bar script is not in the PyPI package, so public users cannot get it.
-- Unreleased in this repo's working tree: background indexing and silent handling of closed connections (fixes the Broken pipe tracebacks a user reported on 0.2.2), the `uvx` command fix in `README.md`, the dashboard's Report an issue and Contact buttons, `app_version` in `/api/usage` and `/api/health`, Opus 5.5 pricing, wrapping table headers so Cost stays visible in half-width tables, `release/demo_data.py`, the clean `docs/demo.gif`, and the tap homepage URL in `release/brew-formula.sh`. They reach users only with the next tagged release.
-- `tokenmeter-site` is not under version control. Preview with `npm run dev` (it may need `--port 8790 --inspector-port 9239` if another wrangler instance holds the defaults).
+- Committed on main but not yet released (PyPI and Homebrew still serve 0.2.2): background indexing and silent handling of closed connections (fixes the Broken pipe tracebacks a user reported on 0.2.2), the `uvx` command fix in `README.md`, the dashboard's Report an issue and Contact buttons, `app_version` in `/api/usage` and `/api/health`, Opus 5.5 pricing, wrapping table headers so Cost stays visible in half-width tables, `release/demo_data.py`, the clean `docs/demo.gif`, and the tap homepage URL in `release/brew-formula.sh`. Also GPT-6 Sol and Luna prices and per-turn OpenAI long-context rates (the `long` block in pricing.json, applied above 272K input tokens). They reach users only with the next tagged release.
+- `tokenmeter-site` is in the private repo `serkankorkut/tokenmeter-site`. Preview with `npm run dev` (it may need `--port 8790 --inspector-port 9239` if another wrangler instance holds the defaults).
 - The main repo is private. Making it public would let the README, `git clone` instructions and the plugin marketplace work for others.
 
 ## Local processes that may be running
