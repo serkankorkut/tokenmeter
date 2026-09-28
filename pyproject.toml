@@ -10,7 +10,7 @@ readme = "README.md"
 license = {text = "MIT"}
 requires-python = ">=3.9"
 authors = [{name = "Serkan Korkut"}]
-keywords = ["claude-code", "codex", "copilot", "tokens", "cost", "dashboard", "llm"]
+keywords = ["claude-code", "claude", "codex", "copilot", "github-copilot", "token-usage", "usage-tracker", "cost", "llm-cost", "dashboard", "llm", "anthropic", "openai"]
 classifiers = [
   "Environment :: Web Environment",
   "Intended Audience :: Developers",
@@ -22,8 +22,10 @@ classifiers = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/serkankorkut/tokenmeter"
+Homepage = "https://tokenmeter.fyi"
+Documentation = "https://tokenmeter.fyi/docs/"
 Source = "https://github.com/serkankorkut/tokenmeter"
+Issues = "https://github.com/serkankorkut/homebrew-tap/issues"
 
 [project.scripts]
 tokenmeter = "tokenmeter.server:main"

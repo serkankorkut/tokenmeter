@@ -7,7 +7,9 @@
 
 ![Tokenmeter demo](https://raw.githubusercontent.com/serkankorkut/homebrew-tap/main/docs/demo.gif)
 
-A local dashboard that shows token usage, real cost, cache misses and rate-limit windows for every prompt you send in **Claude Code**, **Codex** and **GitHub Copilot CLI**. Zero dependencies: one Python file, one HTML file, nothing leaves your machine.
+Tokenmeter is a Claude Code token usage and cost dashboard. It shows token usage, real cost, cache misses and rate-limit windows for every prompt you send in **Claude Code**, **Codex** and **GitHub Copilot CLI**. Zero dependencies: one Python file, one HTML file, nothing leaves your machine.
+
+Website and docs: [tokenmeter.fyi](https://tokenmeter.fyi)
 
 ## What you get
 
