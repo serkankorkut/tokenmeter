@@ -5,9 +5,29 @@
   </picture>
 </p>
 
+<p align="center">
+  <a href="https://pepy.tech/projects/tokenmeter-dashboard"><img src="https://static.pepy.tech/badge/tokenmeter-dashboard" alt="PyPI downloads"></a>
+  <a href="https://github.com/serkankorkut/homebrew-tap/releases"><img src="https://img.shields.io/github/downloads/serkankorkut/homebrew-tap/total?label=homebrew%20installs" alt="Homebrew installs"></a>
+  <a href="https://pypi.org/project/tokenmeter-dashboard/"><img src="https://img.shields.io/pypi/v/tokenmeter-dashboard?label=pypi" alt="PyPI version"></a>
+</p>
+
 ![Tokenmeter demo](https://raw.githubusercontent.com/serkankorkut/homebrew-tap/main/docs/demo.gif)
 
-Tokenmeter is a Claude Code token usage and cost dashboard. It shows token usage, real cost, cache misses and rate-limit windows for every prompt you send in **Claude Code**, **Codex** and **GitHub Copilot CLI**. Zero dependencies: one Python file, one HTML file, nothing leaves your machine.
+Tokenmeter is a free, open-source token usage and cost tracker for AI coding agents: **Claude Code**, **OpenAI Codex CLI** and **GitHub Copilot CLI**. It runs a local dashboard that shows how many tokens every prompt used, what it cost at API prices, how that compares with your Claude Pro, Claude Max or ChatGPT Plus plan, your cache hit rate and cache misses, and how close you are to your usage limits.
+
+Use it for token monitoring and token optimization: watch token usage live, see which prompts, models and projects burn the most tokens, and find what to change to reduce token usage and lower your AI coding costs. It flags cache misses, where a long conversation loses its prompt cache and gets re-sent at full price, and splits every cost into cached, fresh and output tokens so the expensive part is obvious.
+
+It reads the logs the agents already keep on your disk, so there is no API key, no proxy and no account, and nothing leaves your machine. Install it on macOS with Homebrew, or on Linux and Windows with pipx or uv. Zero dependencies: one Python file and one HTML file.
+
+It answers questions like:
+
+- How much does Claude Code cost me per day, per project or per prompt?
+- How many tokens did Claude Code, Codex or Copilot use this week?
+- Why did this prompt cost so much? Tokens are split into cached, fresh and output, with the math shown.
+- Am I close to my Codex 5-hour or weekly limit, and how much have I used in the last 5 hours?
+- How can I reduce Claude Code token usage? Start with the most expensive prompts and the cache misses.
+- Which model or project is eating my token budget?
+- Is my subscription worth it compared with API pricing?
 
 Website and docs: [tokenmeter.fyi](https://tokenmeter.fyi)
 
