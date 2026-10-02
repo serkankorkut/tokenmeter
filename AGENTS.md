@@ -90,6 +90,7 @@ Then capture with headless Chrome against port 7801 (`--window-size=1280,860`, `
 ## Owner's rules
 
 - **DEPLOY ET** means deploy the marketing site (`npm run deploy` in `~/repo/tokenmeter-site`). Never deploy without it or SYNC ET.
+- Repo rules (GitHub rulesets, added 2026-09-30 on tokenmeter, homebrew-tap and tokenmeter-site): `main` blocks force pushes and deletion; `v*` tags cannot be deleted, moved or overwritten. Normal pushes and new tags work. A history rewrite or a re-tag needs the owner to disable the ruleset first in Settings > Rules.
 - **SYNC ET** means do the full sync in one go: commit and push all three repos (tokenmeter, homebrew-tap, tokenmeter-site); if product code changed since the last tag, cut a release (bump the three version strings, test, tag, push, wait for PyPI, regenerate and push the formula); rebuild and deploy tokenmeter.fyi with `npm run deploy`, then `npm run indexnow` in the site repo; then verify everything is clean, on the new version and live. SYNC ET counts as the go-ahead for commits, the release and the deploy together. Pull with rebase first, because other sessions may be committing to the same repos.
 
 - No code comments unless unavoidable. No trailing whitespace, no double blank lines, no blank line after `{` or before `}`. No newline at end of file, in every file.

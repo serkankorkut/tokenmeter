@@ -1,7 +1,7 @@
 {
   "$schema": "https://anthropic.com/claude-code/plugin.schema.json",
   "name": "tokenmeter",
-  "version": "0.2.8",
+  "version": "0.2.9",
   "description": "Live token usage and cost dashboard for Claude Code and Codex",
   "author": {
     "name": "Serkan Korkut",
