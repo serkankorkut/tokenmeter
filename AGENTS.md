@@ -12,7 +12,7 @@ A local web dashboard showing token usage, cost, cache misses and rate-limit win
 |---|---|---|---|
 | `~/repo/tokenmeter` | `serkankorkut/tokenmeter` | public | the app, this repo |
 | `~/repo/homebrew-tap` | `serkankorkut/homebrew-tap` | public | Homebrew formula, public README, demo GIF, release tarballs |
-| `~/repo/tokenmeter-site` | `serkankorkut/tokenmeter-site` | public | marketing and docs site, live at tokenmeter.fyi |
+| `~/repo/tokenmeter-site` | `serkankorkut/tokenmeter-site` | private | marketing and docs site, live at tokenmeter.fyi |
 | `~/repo/serkan.fyi` | private | | owner's personal site; tokenmeter-site copies its build setup and style |
 
 ## Layout of this repo
