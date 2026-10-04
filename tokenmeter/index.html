@@ -353,7 +353,7 @@ function renderCost(recs, cost, prev) {
   } else {
     $('kCostLabel').textContent = 'API-equivalent cost';
     $('kCost').textContent = usd(cost);
-    $('kCostSub').innerHTML = (prevCost > 0 ? `<b>${cost >= prevCost ? '+' : ''}${pct((cost - prevCost) / prevCost)}</b> vs previous period` : 'at API list prices, from pricing.json') + (unpriced ? ` · ${unpriced} unpriced turns excluded` : '');
+    $('kCostSub').innerHTML = (prevCost > 0 ? `<b>${cost >= prevCost ? '+' : ''}${pct((cost - prevCost) / prevCost)}</b> vs previous period` : 'at API list prices, from pricing.json') + (unpriced ? ` · ${unpriced} unpriced turns excluded` : '') + ` · <a href="https://tokenmeter.fyi/docs/" target="_blank" rel="noopener">On a subscription? Add your plan</a>`;
   }
   const budget = state.range === 'today' ? d.budget.daily : state.range === '30' ? d.budget.monthly : null;
   $('kBudget').classList.toggle('hide', !budget);

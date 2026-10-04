@@ -83,4 +83,11 @@ got, srv = server.bind("127.0.0.1", [busy_port, busy_port + 1, busy_port + 2])
 assert got in (busy_port + 1, busy_port + 2) and srv, got
 srv.server_close(); blocker.close()
 assert server.ports_to_try("9000") == [9000] and len(server.ports_to_try()) == 11 or server.PORT_SET
+import sys as _sys, os as _os
+_argv, _path = _sys.argv[0], _os.environ["PATH"]
+_sys.argv[0], _os.environ["PATH"] = "/nowhere/pipx/venvs/x/bin/tokenmeter", "/usr/bin"
+assert "pipx ensurepath" in server.path_hint(), server.path_hint()
+_sys.argv[0] = "/x/server.py"
+assert server.path_hint() == ""
+_sys.argv[0], _os.environ["PATH"] = _argv, _path
 print("ok")

@@ -67,7 +67,7 @@ brew install serkankorkut/tap/tokenmeter
 ```
 
 ```bash
-pipx install tokenmeter-dashboard
+pipx install tokenmeter-dashboard && pipx ensurepath && ~/.local/bin/tokenmeter start
 ```
 
 ```bash

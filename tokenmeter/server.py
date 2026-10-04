@@ -23,7 +23,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 from urllib.request import Request, urlopen
 
-__version__ = "0.2.9"
+__version__ = "0.2.10"
 HERE = os.path.dirname(os.path.abspath(__file__))
 HOME = os.path.expanduser("~")
 CLAUDE_DIR = os.environ.get("CLAUDE_CONFIG_DIR", os.path.join(HOME, ".claude"))
@@ -685,7 +685,16 @@ def control(cmd, port_arg):
         print(f"\n  Port {ports[0]} is used by another app, so Tokenmeter is on {p}.")
     print("\n  Tokenmeter is running in the background" + (" and starts again at login." if login else ".") + "\n  Stop it with: tokenmeter stop\n")
     print(f"  Your dashboard: {url}\n")
+    print(path_hint(), end="")
     webbrowser.open(url)
+
+
+def path_hint():
+    launcher = os.path.abspath(sys.argv[0])
+    if os.path.splitext(os.path.basename(launcher))[0] != "tokenmeter" or shutil.which("tokenmeter"):
+        return ""
+    fix = "pipx ensurepath" if "pipx" in os.path.realpath(launcher) else f'add {os.path.dirname(launcher)} to your PATH'
+    return f"  Typing just `tokenmeter` will not work yet: {os.path.dirname(launcher)} is not on your PATH.\n  To fix it, run `{fix}`, then open a new terminal.\n\n"
 
 
 def arg(name, default=None):
