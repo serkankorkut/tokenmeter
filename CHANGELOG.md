@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.4 · 2026-10-06
+
+- Compact top row: Active sessions shows the 3 latest with a Show all button, so the limits and sessions cards stay short.
+
 ## 0.3.3 · 2026-10-06
 
 - Limits up front: your 5-hour and weekly limits for Claude Code and Codex now sit at the top of the dashboard, with the same labels for both.

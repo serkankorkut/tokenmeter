@@ -168,7 +168,7 @@ footer { margin-top: 20px; color: var(--text-3); font-size: 12px; display: flex;
 </div>
 
 
-<div class="grid two">
+<div class="grid two" style="align-items:start">
   <div class="card"><h2>Usage limits <span class="hint">rolling windows, independent of the range filter</span></h2><div class="limits" id="limits"></div></div>
   <div class="card"><h2>Active sessions <span class="hint">context fill, last 24 hours</span></h2><div class="sess" id="sessions"></div></div>
 </div>
@@ -423,13 +423,15 @@ function renderSessions() {
   for (const r of d.records) if (baseFilter(r) && now - new Date(r.ts) < 86400e3 && !r.sub) last.set(r.session, r);
   const firstPrompt = new Map();
   for (const p of d.prompts) if (p.text && !firstPrompt.has(p.session)) firstPrompt.set(p.session, p.text.replace(/\s+/g, ' ').slice(0, 70));
-  const rows = [...last.values()].sort((a, b) => b.ts.localeCompare(a.ts)).slice(0, 8).map(r => {
+  const rows = [...last.values()].sort((a, b) => b.ts.localeCompare(a.ts)).slice(0, 20).map(r => {
     const ctx = r.in + r.cr + r.cw5 + r.cw1h;
     const win = (r.tool === 'codex' && d.context_windows.codex) || prefixLookup(d.context_windows, r.model) || 200000;
     const f = ctx / win;
     return `<div class="item"><span class="name" title="${esc(r.session)}">${toolDot(r.tool)} ${esc(firstPrompt.get(r.session) || short(r.project))}</span><span class="muted">${esc(r.model)} · ${ago(r.ts)}</span><div class="meter ${f > 0.9 ? 'bad' : f > 0.7 ? 'warn' : ''}"><div style="width:${Math.min(100, f * 100)}%"></div></div><span class="muted">${fmt(ctx)} / ${fmt(win)} context (${pct(f)})</span><span class="muted">${esc(short(r.project))}</span></div>`;
   });
-  $('sessions').innerHTML = rows.join('') || '<div class="empty">No sessions active in the last 24 hours</div>';
+  const shown = state.sessAll ? rows : rows.slice(0, 3);
+  $('sessions').innerHTML = (shown.join('') || '<div class="empty">No sessions active in the last 24 hours</div>') + (rows.length > 3 ? `<button class="btn" id="sessMore" style="justify-self:start;font-size:12px;padding:3px 10px">${state.sessAll ? 'Show fewer' : `Show all ${rows.length}`}</button>` : '');
+  if ($('sessMore')) $('sessMore').onclick = () => { state.sessAll = !state.sessAll; renderSessions(); };
 }
 
 function buckets([s, e]) {
