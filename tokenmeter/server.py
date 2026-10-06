@@ -24,7 +24,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 from urllib.request import Request, urlopen
 
-__version__ = "0.3.0"
+__version__ = "0.3.1"
 HERE = os.path.dirname(os.path.abspath(__file__))
 HOME = os.path.expanduser("~")
 CLAUDE_DIR = os.environ.get("CLAUDE_CONFIG_DIR", os.path.join(HOME, ".claude"))
@@ -591,7 +591,7 @@ LEGACY_LABELS = ("sh.brew.tokenmeter", "homebrew.mxcl.tokenmeter")
 AGENTS_DIR = os.path.join(HOME, "Library", "LaunchAgents")
 UNIT = os.path.join(HOME, ".config", "systemd", "user", "tokenmeter.service")
 LOG = os.path.join(DATA_DIR, "server.log")
-PASS_ENV = ("CLAUDE_CONFIG_DIR", "CODEX_HOME", "COPILOT_DB", "TOKENMETER_DIR", "TOKENMETER_TOKEN")
+PASS_ENV = ("PATH", "CLAUDE_CONFIG_DIR", "CODEX_HOME", "COPILOT_DB", "TOKENMETER_DIR", "TOKENMETER_TOKEN")
 
 
 def program():

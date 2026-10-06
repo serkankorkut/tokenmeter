@@ -35,6 +35,10 @@ header { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-
 .live { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-2); }
 .live i { width: 8px; height: 8px; border-radius: 50%; background: var(--good); animation: pulse 2s infinite; }
 .live.stale i { background: var(--warn); animation: none; }
+.motto { font-size: 12px; color: var(--text-3); white-space: nowrap; }
+@media (max-width: 700px) { .motto { display: none; } }
+.spin { display: inline-block; width: 12px; height: 12px; margin-right: 8px; vertical-align: -2px; border: 2px solid var(--line); border-top-color: var(--text); border-radius: 50%; animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
 @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(0,131,0,.5); } 70% { box-shadow: 0 0 0 7px rgba(0,131,0,0); } 100% { box-shadow: 0 0 0 0 rgba(0,131,0,0); } }
 .controls { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--surface); }
@@ -132,6 +136,7 @@ footer { margin-top: 20px; color: var(--text-3); font-size: 12px; display: flex;
     <svg class="mark" viewBox="6 2 118 90" aria-hidden="true"><line x1="44" y1="12" x2="44" y2="22" stroke="var(--text)" stroke-width="5" stroke-linecap="round"/><circle cx="44" cy="9" r="6" fill="#E8702A"/><rect x="11" y="35" width="8" height="18" rx="3" fill="var(--text)"/><rect x="69" y="35" width="8" height="18" rx="3" fill="var(--text)"/><rect x="18" y="22" width="52" height="44" rx="10" fill="var(--text)"/><circle cx="34" cy="40" r="8" fill="var(--bg)"/><circle cx="54" cy="40" r="8" fill="var(--bg)"/><circle cx="36.5" cy="40" r="3.8" fill="var(--text)"/><circle cx="56.5" cy="40" r="3.8" fill="var(--text)"/><rect x="30" y="52" width="28" height="8" rx="2.5" fill="var(--bg)"/><rect x="38" y="65" width="12" height="8" fill="var(--text)"/><rect x="24" y="72" width="40" height="16" rx="5" fill="var(--text)"/><rect x="82" y="50" width="17" height="12" rx="6" fill="#E8702A"/><rect x="102" y="50" width="12" height="12" rx="6" fill="#E8702A" fill-opacity="0.45"/><rect x="117" y="50" width="7" height="12" rx="3.5" fill="#E8702A" fill-opacity="0.18"/></svg>
     <h1 class="wordmark"><b>token</b>meter</h1>
     <span class="live" id="live"><i></i><span id="liveText">live</span></span>
+    <span class="motto">· Local-first. Your usage stays on your machine.</span>
   </div>
   <div class="controls">
     <div class="seg" id="range"><button data-v="today">Today</button><button data-v="7">7d</button><button data-v="30" class="on">30d</button><button data-v="all">All</button></div>
@@ -149,14 +154,15 @@ footer { margin-top: 20px; color: var(--text-3); font-size: 12px; display: flex;
 <div class="notice hide" id="unpriced"></div>
 
 <div class="card" id="tipsCard" style="margin-bottom:14px">
-  <h2>Tips to spend less <span class="hint">Your most expensive prompts in this range, reviewed by an AI you already use. Nothing is sent until you click Get tips.</span></h2>
+  <h2>Tips to spend less</h2>
+  <p class="muted" style="margin:-4px 0 12px">Your most expensive prompts, reviewed by the AI you already use. Private by default: nothing leaves this machine until you click Get tips, and then only through your own local Claude Code, Codex or Copilot.</p>
   <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
     <div class="seg" id="tipsN" style="font-size:12px"><button data-v="5" class="on">Top 5</button><button data-v="10">Top 10</button></div>
     <select id="tipsTool"></select>
     <button class="btn primary" id="tipsAsk">Get tips</button>
     <button class="btn" id="tipsCopy">Copy prompt</button>
   </div>
-  <p class="muted" id="tipsNote" style="margin:10px 0 0"></p>
+  <p class="muted" id="tipsNote" aria-live="polite" style="margin:10px 0 0"></p>
   <details style="margin-top:10px"><summary style="cursor:pointer" class="muted">What will be sent</summary><div class="full" id="tipsPrompt" style="white-space:pre-wrap;margin-top:8px"></div></details>
   <div class="full hide" id="tipsOut" style="white-space:pre-wrap;margin-top:12px"></div>
 </div>
@@ -553,7 +559,7 @@ function renderTips() {
   $('tipsAsk').classList.toggle('hide', !avail.length);
   $('tipsAsk').disabled = $('tipsCopy').disabled = !text || state.tipsBusy;
   $('tipsPrompt').textContent = text || 'No priced prompts in this range yet.';
-  $('tipsNote').textContent = state.tipsMsg || (!text ? '' : avail.length ? `Get tips sends the text below, including the first 600 characters of each prompt and its project path, to ${TOOLS[sel.value]} on this machine, using your own login. It costs about as much as one short prompt.` : 'No Claude Code, Codex or Copilot command was found on this machine, so Tokenmeter cannot ask one for you. Copy the prompt and paste it into the AI you use.');
+  $('tipsNote').innerHTML = (state.tipsBusy ? '<span class="spin" aria-hidden="true"></span>' : '') + esc(state.tipsMsg || (!text ? '' : avail.length ? `Get tips sends the text below, including the first 600 characters of each prompt and its project path, to ${TOOLS[sel.value]} on this machine, using your own login. It costs about as much as one short prompt.` : 'No Claude Code, Codex or Copilot command was found on this machine, so Tokenmeter cannot ask one for you. Copy the prompt and paste it into the AI you use.'));
 }
 state.tipsN = '5';
 $('tipsN').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; $('tipsN').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); state.tipsN = b.dataset.v; state.tipsMsg = ''; renderTips(); });

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.1 · 2026-10-06
+
+- Get tips now finds Claude Code, Codex or Copilot when Tokenmeter runs in the background. Run `tokenmeter start` once after upgrading.
+- A progress spinner while the AI answers, and clearer privacy wording.
+
 ## 0.3.0 · 2026-10-06
 
 - Tips to spend less: one click sends your 5 or 10 most expensive prompts to Claude Code, Codex or Copilot CLI on your machine and shows what to change. Or copy the prompt into any AI.
