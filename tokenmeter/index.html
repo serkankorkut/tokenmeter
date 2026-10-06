@@ -168,6 +168,11 @@ footer { margin-top: 20px; color: var(--text-3); font-size: 12px; display: flex;
 </div>
 
 
+<div class="grid two">
+  <div class="card"><h2>Usage limits <span class="hint">rolling windows, independent of the range filter</span></h2><div class="limits" id="limits"></div></div>
+  <div class="card"><h2>Active sessions <span class="hint">context fill, last 24 hours</span></h2><div class="sess" id="sessions"></div></div>
+</div>
+
 <details class="notice" id="howCost" style="margin-bottom:14px"><summary style="cursor:pointer;font-weight:600;color:var(--text)">How cost is calculated</summary>
 <p style="margin:10px 0 6px">Every model reply reports how many tokens of each type it used. Tokenmeter multiplies each type by that model's list price and adds them up:</p>
 <p style="margin:0 0 10px;font-family:ui-monospace,Menlo,monospace;font-size:12px">cost = cached reads × read price + uncached input × input price + cache writes × write price + output × output price, all per million tokens</p>
@@ -188,11 +193,6 @@ footer { margin-top: 20px; color: var(--text-3); font-size: 12px; display: flex;
 <div class="card" id="promptsCard" style="margin-bottom:14px">
   <h2>Prompts <span class="muted" id="promptCount"></span><span class="hint">Click a row for the full text, the cost math and a resume command · click Cost to see the most expensive first</span></h2>
   <div class="scroll" style="max-height:520px"><table id="prompts"></table></div>
-</div>
-
-<div class="grid two">
-  <div class="card"><h2>Usage limits <span class="hint">rolling windows, independent of the range filter</span></h2><div class="limits" id="limits"></div></div>
-  <div class="card"><h2>Active sessions <span class="hint">context fill, last 24 hours</span></h2><div class="sess" id="sessions"></div></div>
 </div>
 
 <div class="card" id="chartCard" style="margin-bottom:14px">
@@ -390,6 +390,7 @@ function renderRates(recs) {
   $('rateTable').querySelectorAll('th').forEach(th => th.style.cursor = 'default');
 }
 
+const CLAUDE_WINDOWS = { five_hour: '5-hour window', seven_day: 'Weekly window', seven_day_opus: 'Weekly window, Opus', seven_day_sonnet: 'Weekly window, Sonnet', extra_usage: 'Extra usage' };
 function renderLimits() {
   const d = state.data, now = Date.now();
   const mine = d.records.filter(r => !state.user || r.user === state.user);
@@ -401,7 +402,7 @@ function renderLimits() {
   if (state.tool === 'all' || state.tool === 'claude') {
     let body = '';
     const c = d.limits.claude;
-    if (c && typeof c === 'object') for (const [k, v] of Object.entries(c)) if (v && typeof v === 'object' && 'utilization' in v) body += meter(v.utilization / 100, k.replace(/_/g, ' '), `${Math.round(v.utilization)}%${v.resets_at ? ' · ' + resets(v.resets_at) : ''}`);
+    if (c && typeof c === 'object') for (const [k, v] of Object.entries(c)) if (v && typeof v === 'object' && 'utilization' in v) body += meter(v.utilization / 100, CLAUDE_WINDOWS[k] || k.replace(/_/g, ' '), `${Math.round(v.utilization)}%${v.resets_at ? ' · ' + resets(v.resets_at) : ''}`);
     body += local('claude');
     if (!c) body += `<p class="muted" style="margin:8px 0 0">Anthropic does not write the plan limit % to disk. Tokenmeter shows it when a Claude Code OAuth token is available in the keychain.</p>`;
     blocks.push(`<div><h3>${toolDot('claude')}</h3>${body}</div>`);

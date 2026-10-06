@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.3 · 2026-10-06
+
+- Limits up front: your 5-hour and weekly limits for Claude Code and Codex now sit at the top of the dashboard, with the same labels for both.
+
 ## 0.3.2 · 2026-10-06
 
 - Easier to read tips: the answer now appears right under its label, above What will be sent.
