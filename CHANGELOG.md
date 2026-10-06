@@ -1,25 +1,9 @@
 # Changelog
 
-## 0.3.4 · 2026-10-06
-
-- Compact top row: Active sessions shows the 3 latest with a Show all button, so the limits and sessions cards stay short.
-
-## 0.3.3 · 2026-10-06
-
-- Limits up front: your 5-hour and weekly limits for Claude Code and Codex now sit at the top of the dashboard, with the same labels for both.
-
-## 0.3.2 · 2026-10-06
-
-- Easier to read tips: the answer now appears right under its label, above What will be sent.
-
-## 0.3.1 · 2026-10-06
-
-- Get tips works in the background: Tokenmeter now finds Claude Code, Codex or Copilot when it runs as a service. Run `tokenmeter start` once after upgrading.
-- A progress spinner while the AI answers, and clearer privacy wording.
-
 ## 0.3.0 · 2026-10-06
 
 - Tips to spend less: one click sends your 5 or 10 most expensive prompts to Claude Code, Codex or Copilot CLI on your machine and shows what to change. Or copy the prompt into any AI.
+- Run `tokenmeter start` once after upgrading so Get tips finds your AI tool.
 
 ## 0.2.10 · 2026-10-04
 
