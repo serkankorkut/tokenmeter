@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.2 · 2026-10-06
+
+- Easier to read tips: the answer now appears right under its label, above What will be sent.
+
 ## 0.3.1 · 2026-10-06
 
 - Get tips works in the background: Tokenmeter now finds Claude Code, Codex or Copilot when it runs as a service. Run `tokenmeter start` once after upgrading.
