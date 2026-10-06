@@ -90,4 +90,13 @@ assert "pipx ensurepath" in server.path_hint(), server.path_hint()
 _sys.argv[0] = "/x/server.py"
 assert server.path_hint() == ""
 _sys.argv[0], _os.environ["PATH"] = _argv, _path
+import tempfile as _tf
+_bin = _tf.mkdtemp()
+with open(_os.path.join(_bin, "claude"), "w") as f:
+    f.write("#!/bin/sh\necho \"$*\"\ncat\n")
+_os.chmod(_os.path.join(_bin, "claude"), 0o755)
+_os.environ["PATH"] = _bin + _os.pathsep + _path
+assert server.ask_advisor("claude", "hi") == {"text": "-p --tools \nhi"}, server.ask_advisor("claude", "hi")
+assert "error" in server.ask_advisor("nope", "hi")
+_os.environ["PATH"] = _path
 print("ok")

@@ -80,7 +80,7 @@ Then capture with headless Chrome against port 7801 (`--window-size=1280,860`, `
 
 ## Feedback and CI
 
-- Issue forms live in the public tap repo: install failure (asks for `brew gist-logs` link and `brew config`), bug (prefilled `version` field), idea. The dashboard footer's Report an issue button links to the bug form with the version prefilled; Contact is `mailto:korkutserkan@outlook.com`.
+- Issue forms live in the public tap repo: install failure (asks for `brew gist-logs` link and `brew config`), bug (prefilled `version` field), idea. The dashboard footer's Report an issue button links to the bug form with the version prefilled; Contact is `mailto:support@tokenmeter.fyi`.
 - `.github/workflows/health.yml` in the tap runs `brew install`, `brew test`, `brew audit --strict --online` and a live HTTP check on Apple Silicon, Intel and Linux, on every push and Monday and Thursday at 06:00 UTC. GitHub emails the owner when a scheduled run fails. Intel builds Python from source and takes much longer than the others.
 
 ## Website

@@ -17,7 +17,7 @@ Tokenmeter is a free, open-source token usage and cost tracker for AI coding age
 
 Use it for token monitoring and token optimization: watch token usage live, see which prompts, models and projects burn the most tokens, and find what to change to reduce token usage and lower your AI coding costs. It flags cache misses, where a long conversation loses its prompt cache and gets re-sent at full price, and splits every cost into cached, fresh and output tokens so the expensive part is obvious.
 
-It reads the logs the agents already keep on your disk, so there is no API key, no proxy and no account, and nothing leaves your machine. Install it on macOS with Homebrew, or on Linux and Windows with pipx or uv. Zero dependencies: one Python file and one HTML file.
+It reads the logs the agents already keep on your disk, so there is no API key, no proxy and no account, and nothing leaves your machine unless you ask for tips. Install it on macOS with Homebrew, or on Linux and Windows with pipx or uv. Zero dependencies: one Python file and one HTML file.
 
 It answers questions like:
 
@@ -39,6 +39,7 @@ Website and docs: [tokenmeter.fyi](https://tokenmeter.fyi)
 - Active sessions with a context-fill gauge, so you see compaction coming
 - Every prompt with its text, the turns it triggered, tokens, cost and duration, plus a resume command. Click any header to sort by date, tokens, cost, turns or duration
 - Cache-miss detector: turns where the cached prefix collapsed and had to be re-written, with the prompt that was in progress and what the re-write cost
+- Tips to spend less: one click sends your 5 or 10 most expensive prompts to Claude Code, Codex or Copilot CLI on your machine, with your own login, and shows what to change. Without one of those commands, copy the prompt and paste it into any AI
 - Most expensive prompts, cost per git commit, cost mix by token type, and breakdowns by model, project and session
 - Budget alerts: set a daily or monthly cap and get a desktop notification when you cross it
 - Team mode: teammates export daily aggregates to one shared Tokenmeter and you filter by person
@@ -54,7 +55,7 @@ Nothing is installed inside Claude Code, Codex or Copilot. All three already sav
 3. It multiplies tokens by the prices in `pricing.json` to estimate cost.
 4. It serves a web page at `http://127.0.0.1:7788`. The page asks the server every 4 seconds if anything changed and redraws when it has.
 
-When you send a new prompt, the tool appends to its log, Tokenmeter notices the file grew, re-reads that one file, and the new turn shows up. Only your machine is involved. Nothing is sent anywhere.
+When you send a new prompt, the tool appends to its log, Tokenmeter notices the file grew, re-reads that one file, and the new turn shows up. Only your machine is involved. Nothing is sent anywhere, except when you click Get tips: then the text shown under What will be sent goes to the AI tool you picked.
 
 The `/tokenmeter` skill is just a shortcut that starts `server.py` and gives you the link.
 

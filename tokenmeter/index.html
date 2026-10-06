@@ -143,11 +143,24 @@ footer { margin-top: 20px; color: var(--text-3); font-size: 12px; display: flex;
     <a class="btn" id="csv" href="/api/export.csv" download>Export CSV</a>
   </div>
 </header>
-
 <div class="notice hide" id="indexing"></div>
 <div class="notice hide" id="firstRun">No transcripts found yet. Tokenmeter reads <code id="frClaude"></code>, <code id="frCodex"></code> and <code id="frCopilot"></code>. Send one prompt in Claude Code, Codex or Copilot CLI and it will appear here within a few seconds. If your logs live elsewhere, set <code>CLAUDE_CONFIG_DIR</code>, <code>CODEX_HOME</code> or <code>COPILOT_DB</code> before starting the server.</div>
 <div class="notice alert hide" id="alerts"></div>
 <div class="notice hide" id="unpriced"></div>
+
+<div class="card" id="tipsCard" style="margin-bottom:14px">
+  <h2>Tips to spend less <span class="hint">Your most expensive prompts in this range, reviewed by an AI you already use. Nothing is sent until you click Get tips.</span></h2>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+    <div class="seg" id="tipsN" style="font-size:12px"><button data-v="5" class="on">Top 5</button><button data-v="10">Top 10</button></div>
+    <select id="tipsTool"></select>
+    <button class="btn primary" id="tipsAsk">Get tips</button>
+    <button class="btn" id="tipsCopy">Copy prompt</button>
+  </div>
+  <p class="muted" id="tipsNote" style="margin:10px 0 0"></p>
+  <details style="margin-top:10px"><summary style="cursor:pointer" class="muted">What will be sent</summary><div class="full" id="tipsPrompt" style="white-space:pre-wrap;margin-top:8px"></div></details>
+  <div class="full hide" id="tipsOut" style="white-space:pre-wrap;margin-top:12px"></div>
+</div>
+
 
 <details class="notice" id="howCost" style="margin-bottom:14px"><summary style="cursor:pointer;font-weight:600;color:var(--text)">How cost is calculated</summary>
 <p style="margin:10px 0 6px">Every model reply reports how many tokens of each type it used. Tokenmeter multiplies each type by that model's list price and adds them up:</p>
@@ -218,7 +231,7 @@ footer { margin-top: 20px; color: var(--text-3); font-size: 12px; display: flex;
 <div class="feedback">
   <span>Something wrong, or an idea?</span>
   <a class="btn primary" id="issueBtn" href="https://github.com/serkankorkut/homebrew-tap/issues/new/choose" target="_blank" rel="noopener">Report an issue</a>
-  <a class="btn" id="contactBtn" href="mailto:korkutserkan@outlook.com?subject=Tokenmeter">Contact</a>
+  <a class="btn" id="contactBtn" href="mailto:support@tokenmeter.fyi?subject=Tokenmeter">Contact</a>
 </div>
 <footer><span id="appVersion"></span><span id="srcClaude"></span><span id="srcCodex"></span><span id="srcCopilot"></span><span id="scanned"></span></footer>
 </div>
@@ -332,6 +345,7 @@ function render() {
   for (const p of d.prompts) if (p.text && !firstPrompt.has(p.session)) firstPrompt.set(p.session, p.text.replace(/\s+/g, ' ').slice(0, 60));
   rows = groups(r => firstPrompt.get(r.session) || ((r.session || '').slice(0, 8) + ' · ' + short(r.project))); table('bySession', groupCols('Session', rows), rows, { sort: 'cost', limit: 20 });
   renderPrompts(att.groups, prompts.length);
+  state.groups = att.groups; renderTips();
   renderMisses(recs, att.owner);
   renderCommits(recs);
   renderFeed(recs);
@@ -512,6 +526,52 @@ function renderPrompts(groups, totalPrompts) {
   wireExpand('prompts', table('prompts', promptCols(), groups, { sort: 'ts', limit: 150, attrs: () => 'class="prow"', extra: promptExtra(10), empty: 'No prompts in this range' }));
 }
 
+const RANGE_NAMES = { today: 'today', 7: 'the last 7 days', 30: 'the last 30 days', all: 'all time' };
+function tipsPrompt() {
+  const top = (state.groups || []).filter(g => g.priced && g.cost > 0).sort((a, b) => b.cost - a.cost).slice(0, +state.tipsN);
+  if (!top.length) return { top, text: '' };
+  const lines = top.map((g, i) => `${i + 1}. ${usd(g.cost)} · ${TOOLS[g.tool] || g.tool} · ${[...g.models].join(', ')} · project ${short(g.project)} · ${g.turns} turns over ${Math.max(1, Math.round(g.dur / 60000))} min
+   cached ${fmt(g.cr)} (${usd(g.crCost)}) · fresh ${fmt(g.fresh)} (${usd(g.freshCost)}) · output ${fmt(g.out)} (${usd(g.outCost)})
+   Prompt: ${JSON.stringify((g.text || '(no text recorded)').replace(/\s+/g, ' ').slice(0, 600))}`);
+  return { top, text: `I use AI coding tools (${[...new Set(top.map(g => TOOLS[g.tool] || g.tool))].join(', ')}). Below are my ${top.length} most expensive prompts from ${RANGE_NAMES[state.range] || 'this period'}, measured by Tokenmeter at API list prices.
+
+Token types: "cached" are cache reads, the cheapest kind (about 2 to 10 percent of a fresh token). "fresh" is new input plus cache writes, usually the biggest cost. "output" is what the model wrote, including thinking.
+
+For each prompt, say in one or two lines what made it expensive and one concrete change that would have cost less, for example starting a new session or using /clear, a cheaper model, smaller files or less pasted context, fewer turns, or avoiding cache misses from long idle gaps. Then list the three habits that would save the most overall. Be specific to these prompts, skip generic advice, and reply in plain text.
+
+${lines.join('\n\n')}` };
+}
+function renderTips() {
+  const { top, text } = tipsPrompt();
+  const sel = $('tipsTool'), avail = state.tipTools || [];
+  if (!sel.options.length || sel.dataset.avail !== avail.join()) {
+    const spend = t => sum(top.filter(g => g.tool === t), g => g.cost);
+    sel.innerHTML = avail.sort((a, b) => spend(b) - spend(a)).map(t => `<option value="${t}">${TOOLS[t]}</option>`).join('');
+    sel.dataset.avail = avail.join();
+  }
+  sel.classList.toggle('hide', !avail.length);
+  $('tipsAsk').classList.toggle('hide', !avail.length);
+  $('tipsAsk').disabled = $('tipsCopy').disabled = !text || state.tipsBusy;
+  $('tipsPrompt').textContent = text || 'No priced prompts in this range yet.';
+  $('tipsNote').textContent = state.tipsMsg || (!text ? '' : avail.length ? `Get tips sends the text below, including the first 600 characters of each prompt and its project path, to ${TOOLS[sel.value]} on this machine, using your own login. It costs about as much as one short prompt.` : 'No Claude Code, Codex or Copilot command was found on this machine, so Tokenmeter cannot ask one for you. Copy the prompt and paste it into the AI you use.');
+}
+state.tipsN = '5';
+$('tipsN').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; $('tipsN').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); state.tipsN = b.dataset.v; state.tipsMsg = ''; renderTips(); });
+$('tipsTool').onchange = () => { state.tipsMsg = ''; renderTips(); };
+$('tipsCopy').onclick = async () => { try { await navigator.clipboard.writeText(tipsPrompt().text); $('tipsCopy').textContent = 'Copied'; } catch (e) { $('tipsCopy').textContent = 'Copy failed, select the text below'; } setTimeout(() => $('tipsCopy').textContent = 'Copy prompt', 2000); };
+$('tipsAsk').onclick = async () => {
+  const tool = $('tipsTool').value, out = $('tipsOut');
+  state.tipsBusy = true; state.tipsMsg = `Asking ${TOOLS[tool]}… this usually takes 20 to 60 seconds.`; renderTips();
+  out.classList.add('hide');
+  try {
+    const r = await (await fetch('/api/tips', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tool, prompt: tipsPrompt().text }) })).json();
+    out.textContent = r.text || r.error; out.classList.remove('hide');
+    state.tipsMsg = r.text ? `Answer from ${TOOLS[tool]}:` : ' ';
+  } catch (e) { out.textContent = 'Tokenmeter could not be reached. Is it still running?'; out.classList.remove('hide'); state.tipsMsg = ' '; }
+  state.tipsBusy = false; renderTips();
+};
+fetch('/api/tips').then(r => r.json()).then(r => { state.tipTools = r.tools; renderTips(); }).catch(() => {});
+
 function renderMisses(recs, owner) {
   const P = state.data.pricing;
   const bySession = new Map();
@@ -587,7 +647,7 @@ async function load() {
     $('scanned').textContent = `${d.records.length.toLocaleString()} turns indexed · updated ${new Date(d.generated * 1000).toLocaleTimeString()}`;
     $('appVersion').textContent = `tokenmeter ${d.app_version}`;
     $('issueBtn').href = `https://github.com/serkankorkut/homebrew-tap/issues/new?template=bug.yml&version=${encodeURIComponent('tokenmeter ' + d.app_version)}`;
-    $('contactBtn').href = `mailto:korkutserkan@outlook.com?subject=${encodeURIComponent('Tokenmeter ' + d.app_version)}`;
+    $('contactBtn').href = `mailto:support@tokenmeter.fyi?subject=${encodeURIComponent('Tokenmeter ' + d.app_version)}`;
     setLive(true);
   } catch (e) { setLive(false); }
 }

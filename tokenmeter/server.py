@@ -15,6 +15,7 @@ import socket
 import sqlite3
 import subprocess
 import sys
+import tempfile
 import threading
 import time
 import traceback
@@ -23,7 +24,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 from urllib.request import Request, urlopen
 
-__version__ = "0.2.10"
+__version__ = "0.3.0"
 HERE = os.path.dirname(os.path.abspath(__file__))
 HOME = os.path.expanduser("~")
 CLAUDE_DIR = os.environ.get("CLAUDE_CONFIG_DIR", os.path.join(HOME, ".claude"))
@@ -445,6 +446,8 @@ class Handler(BaseHTTPRequestHandler):
         if url.path == "/":
             with open(os.path.join(HERE, "index.html"), "rb") as f:
                 return self.send(f.read(), "text/html; charset=utf-8")
+        if url.path == "/api/tips":
+            return self.send(json.dumps({"tools": [t for t, cmd in ADVISORS.items() if shutil.which(cmd[0])]}))
         if url.path == "/api/health":
             return self.send(json.dumps({"ok": True, "app": "tokenmeter", "version": __version__, "user": USER, "pid": os.getpid()}))
         if url.path == "/api/version":
@@ -468,6 +471,8 @@ class Handler(BaseHTTPRequestHandler):
         self.send("not found", "text/plain", 404)
 
     def do_POST(self):
+        if urlparse(self.path).path == "/api/tips":
+            return self.tips()
         if urlparse(self.path).path != "/api/ingest":
             return self.send("not found", "text/plain", 404)
         if TOKEN and self.headers.get("X-Tokenmeter-Token") != TOKEN:
@@ -487,6 +492,40 @@ class Handler(BaseHTTPRequestHandler):
             json.dump({"user": user, "updated": time.time(), "records": recs, "prompts": prompts}, f)
         os.replace(path + ".tmp", path)
         self.send(json.dumps({"ok": True, "records": len(recs)}))
+
+    def tips(self):
+        origin = urlparse(self.headers.get("Origin") or "http://" + (self.headers.get("Host") or "")).netloc
+        host = (self.headers.get("Host") or "").rsplit(":", 1)[0]
+        if origin != self.headers.get("Host") or host not in ("127.0.0.1", "localhost", "[::1]") or self.headers.get("Content-Type") != "application/json":
+            return self.send(json.dumps({"error": "Tips can only be requested from the dashboard page."}), status=403)
+        try:
+            d = json.loads(self.rfile.read(min(int(self.headers.get("Content-Length", 0)), 200000)))
+            self.send(json.dumps(ask_advisor(d["tool"], d["prompt"])))
+        except (ValueError, KeyError, TypeError) as e:
+            self.send(json.dumps({"error": f"Bad request: {e}"}), status=400)
+
+
+ADVISORS = {
+    "claude": ["claude", "-p", "--tools", ""],
+    "codex": ["codex", "exec", "--skip-git-repo-check", "--sandbox", "read-only", "-"],
+    "copilot": ["copilot", "-p"],
+}
+
+
+def ask_advisor(tool, text):
+    cmd = ADVISORS.get(tool)
+    if not cmd or not shutil.which(cmd[0]):
+        return {"error": f"The {cmd[0] if cmd else tool} command was not found on this machine, so Tokenmeter cannot ask it. Use Copy prompt and paste it into your AI tool instead."}
+    args, stdin = (cmd + [text], None) if tool == "copilot" else (cmd, text)
+    try:
+        r = subprocess.run(args, input=stdin, capture_output=True, text=True, timeout=300, cwd=tempfile.gettempdir(), stdin=None if stdin is not None else subprocess.DEVNULL)
+    except subprocess.TimeoutExpired:
+        return {"error": f"{cmd[0]} did not answer within 5 minutes. Try again, or use Copy prompt."}
+    out = r.stdout.strip()
+    if r.returncode or not out:
+        why = (r.stderr.strip() or out or "no output").splitlines()[-1][:300]
+        return {"error": f"{cmd[0]} stopped with an error: {why}. If it asks you to log in, run {cmd[0]} once in a terminal, then try again."}
+    return {"text": out}
 
 
 def health(port):
